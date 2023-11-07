@@ -1,3 +1,4 @@
+# based on shooting example
 from casadi import *
 
 m_I = 1
@@ -41,4 +42,32 @@ for j in range(M):
 F = Function('F', [X0, U], [X, Q], ['x0', 'p'], ['xf', 'qf'])
 
 # Evaluate at a test point
-Fk = F(x0=[0,1,0,0], p)
+Fk = F(x0=[0,1,0,0], p=[0,0])
+
+# Start with an empty NLP
+w=[]
+w0 = []
+lbw = []
+ubw = []
+J = 0
+g=[]
+lbg = []
+ubg = []
+
+# formulate NLP
+Xk = MX([0, 1])
+for k in range(N):
+    # New NLP variable for the control
+    Uk = MX.sym('U_' + str(k))
+    w += [Uk]
+    lbw += [-1]
+    ubw += [1]
+    w0 += [0]
+
+    # integrate till the end of the interval
+    Fk = F(x0=Xk, p=Uk)
+    Xk = Fk['xf']
+    J = J + Fk['qf']
+
+    # add inequality constraint
+    g += 
