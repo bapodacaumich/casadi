@@ -4,6 +4,27 @@ import numpy as np
 import matplotlib as mpl
 from mpl_toolkits.mplot3d import Axes3D
 
+def ode_funCW(n_states, n_inputs):
+    """
+    ode function for free floating inspector in space using CW equations
+    """
+    m_I = 1 # inspector mass
+    mu = 3.986e14 # standard gravitational parameter
+    a = 6.6e6 # international space station orbit radius
+    n = np.sqrt(mu/a**3) # orbital rate of target craft
+
+    x = MX.sym('x', n_states)
+    u = MX.sym('u', n_inputs)
+
+    xdot = vertcat(x[3],
+                   x[4],
+                   x[5],
+                   3*n**2* x[0] + 2*n*x[4] + u[0]/m_I,
+                   -2*n*x[3]    + u[1]/m_I,
+                   -n**2*x[2]   + u[2]/m_I)
+
+    return Function('ode_fun', [x, u], [xdot])
+
 def ode_fun3(n_states, n_inputs):
     """
     ode function for free floating inspector in 3D
@@ -109,7 +130,7 @@ def plot_solution3(x, u, s, T):
     plt.show()
 
 
-def plot_solution2(x, u, s, T):
+def plot_solution2(x, u, c, T):
     """
     2D solution space
     x - states shape(N,4)
@@ -122,11 +143,11 @@ def plot_solution2(x, u, s, T):
 
     # obstacle parameterization
     theta_circle = np.linspace(0,2*np.pi,100)
-    x_circle = s[2]*np.cos(theta_circle) + s[0]
-    y_circle = s[2]*np.sin(theta_circle) + s[1]
+    x_circle = c[2]*np.cos(theta_circle) + c[0]
+    y_circle = c[2]*np.sin(theta_circle) + c[1]
 
-    fig, ax0 = plt.subplots()
-    fig, (ax1, ax2) = plt.subplots(2,1)
+    _, ax0 = plt.subplots()
+    _, (ax1, ax2) = plt.subplots(2,1)
 
     ax0.plot(x[:,0], x[:,1],
              color='tab:blue',
@@ -167,17 +188,18 @@ def plot_solution2(x, u, s, T):
 
 def main():
     ## problem size
+    threespace = True
     n_timesteps = 400
     T = 10.0
     dt = T/n_timesteps
+
+    ## Constraints and Parameters
     thrust_limit = 10.0
-    # obstacle_cost_weight = 1.0
     fuel_cost_weight = 1.0
     g0 = 9.81
     Isp = 80
 
     ## state definition and obstacle specification
-    threespace = True
     if threespace:
         n_states = 6
         n_inputs = 3
@@ -187,19 +209,20 @@ def main():
 
     ## obstacle specifications
     if threespace: # three dimensions
-        s_x1 = 2.0
-        s_x2 = 1.5
-        s_x3 = 0.0
+        s_x0 = 2.0
+        s_x1 = 1.5
+        s_x2 = 0.0
         s_r = 1.0
-        sphere = [s_x1, s_x2, s_x3, s_r]
+        sphere = [s_x0, s_x1, s_x2, s_r]
     else: # sphere
-        s_x1 = 2.0
-        s_x2 = 1.5
+        s_x0 = 2.0
+        s_x1 = 1.5
         s_r = 1.0
-        circle = [s_x1, s_x2, s_r]
+        circle = [s_x0, s_x1, s_r]
 
     ## define ode
-    f = ode_fun3(n_states, n_inputs)
+    # f = ode_fun3(n_states, n_inputs)
+    f = ode_funCW(n_states, n_inputs)
 
     ## instantiate opti stack
     opti = Opti()
@@ -230,15 +253,16 @@ def main():
     opti.subject_to(sum1(U**2) <= thrust_limit)
 
     ## constrain collisions (distance away from centerpoint of circle)
-    # opti.subject_to(sum1((X[:,:2].T - vertcat(s_x1, s_x2))**2) >= s_r**2)
     for k in range(n_timesteps):
-        opti.subject_to(((X[k,0] - s_x1)**2 + (X[k,1] - s_x2)**2) >= s_r**2)
+        if threespace:
+            opti.subject_to(((X[k,0] - sphere[0])**2 + (X[k,1] - sphere[1])**2 + (X[k,2] - sphere[2])**2) >= s_r**2)
+        else:
+            opti.subject_to(((X[k,0] - circle[0])**2 + (X[k,1] - circle[1])**2) >= s_r**2)
 
     ## cost function
-    # compute cost
     cost = fuel_cost_weight * sumsqr(U)/g0/Isp
 
-    # add obstacle to cost fn
+    # add obstacle to cost fn -- Dont need this
     # cost += obstacle_cost_weight * sumsqr(exp(-1*((X[:,:2].T - vertcat(s_x1, s_x2))**2)))
 
     # add cost to optimization problem
@@ -256,8 +280,10 @@ def main():
     x_opt = sol.value(X)
     u_opt = sol.value(U)
 
-    # plot_solution2(x_opt, u_opt, circle, T)
-    plot_solution3(x_opt, u_opt, sphere, T)
+    if threespace:
+        plot_solution3(x_opt, u_opt, sphere, T)
+    else:
+        plot_solution2(x_opt, u_opt, circle, T)
 
 
 if __name__ == "__main__":
