@@ -207,16 +207,25 @@ def main():
         n_states = 4
         n_inputs = 2
 
+    ## initial and final conditions
+    if threespace:
+        x0 = vertcat(1.0, 1.0, 0.0, 0.0, 0.0, 0.0)
+        xf = vertcat(1.0, 1.0, 4.0, 0.0, 0.0, 0.0)
+    else:
+        x0 = vertcat(0.0, 0.0, 0.0, 0.0)
+        xf = vertcat(0.0, 4.0, 0.0, 0.0)
+
+
     ## obstacle specifications
     if threespace: # three dimensions
-        s_x0 = 2.0
-        s_x1 = 1.5
-        s_x2 = 0.0
+        s_x0 = x0[0].__float__()
+        s_x1 = x0[1].__float__()
+        s_x2 = (xf[2].__float__() - x0[2].__float__())/2
         s_r = 1.0
         sphere = [s_x0, s_x1, s_x2, s_r]
     else: # sphere
-        s_x0 = 2.0
-        s_x1 = 1.5
+        s_x0 = x0[0].__float__()
+        s_x1 = (xf[1].__float__() - x0[1].__float__())/2
         s_r = 1.0
         circle = [s_x0, s_x1, s_r]
 
@@ -232,14 +241,6 @@ def main():
     U = opti.variable(n_timesteps, n_inputs)
 
     ### CONSTRAINTS ###
-
-    ## initial and final conditions
-    if threespace:
-        x0 = vertcat(0.0, 1.0, 0.0, 0.0, 0.0, 0.0)
-        xf = vertcat(4.0, 1.0, 0.0, 0.0, 0.0, 0.0)
-    else:
-        x0 = vertcat(0.0, 1.0, 0.0, 0.0)
-        xf = vertcat(4.0, 1.0, 0.0, 0.0)
 
     # use constraint to ensure initial and final conditions
     opti.subject_to(X[0,:].T == x0)
@@ -270,7 +271,7 @@ def main():
 
     ## solver
     # create solver
-    opts = {'ipopt.print_level': 0, 'print_time': 0, 'ipopt.tol': 1e-5}
+    opts = {'ipopt.print_level': 0, 'print_time': 0, 'ipopt.tol': 1}
     opti.solver('ipopt', opts)
 
     # solve problem
