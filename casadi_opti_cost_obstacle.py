@@ -45,8 +45,11 @@ def plot_solution3(x, u, s, T):
     ulim = max(ax0.get_xlim()[1], ax0.get_ylim()[1], ax0.get_zlim()[1])
     llim = min(ax0.get_xlim()[0], ax0.get_ylim()[0], ax0.get_zlim()[0])
     z_scale = 1.3
+    lim_range = ulim-llim
     ax0.set_zlim([llim, ulim])
-    ulim = (ulim-llim)*z_scale + llim
+    ulim = (lim_range)*z_scale + llim
+    llim = -lim_range/2
+    llim = lim_range/2
     ax0.set_xlim([llim, ulim])
     ax0.set_ylim([llim, ulim])
 

@@ -1,7 +1,7 @@
-from numpy import linspace, mgrid, pi, sin, cos
+from numpy import linspace, mgrid, pi, sin, cos, mean
 from matplotlib import pyplot as plt
 
-def plot_solution3(x, u, s, T):
+def plot_solution3(x, u, obs, T):
     """
     2D solution space
     x - states shape(N,6)
@@ -10,24 +10,25 @@ def plot_solution3(x, u, s, T):
     """
     N = x.shape[0]
     t = linspace(0,T,N)
-    qs = 20 # quiver spacing: spacing of visual control actions along path
-
-    # draw sphere
-    u_sphere, v_sphere = mgrid[0:2*pi:20j, 0:pi:10j]
-    x_sphere = s[0] + s[3]*cos(u_sphere)*sin(v_sphere)
-    y_sphere = s[1] + s[3]*sin(u_sphere)*sin(v_sphere)
-    z_sphere = s[2] + s[3]*cos(v_sphere)
+    qs = 5 # quiver spacing: spacing of visual control actions along path
 
     fig = plt.figure()
     ax0 = fig.add_subplot(projection='3d')
 
-    ax0.plot_surface(x_sphere, y_sphere, z_sphere,
-                     color='k',
-                     alpha=0.2)
-    ax0.plot_wireframe(x_sphere, y_sphere, z_sphere,
-                       color='k',
-                       linewidth=0.2,
-                       label='Obstacle')
+    for s in obs:
+        # draw sphere
+        u_sphere, v_sphere = mgrid[0:2*pi:20j, 0:pi:10j]
+        x_sphere = s[0] + s[3]*cos(u_sphere)*sin(v_sphere)
+        y_sphere = s[1] + s[3]*sin(u_sphere)*sin(v_sphere)
+        z_sphere = s[2] + s[3]*cos(v_sphere)
+
+        ax0.plot_surface(x_sphere, y_sphere, z_sphere,
+                        color='k',
+                        alpha=0.2)
+        ax0.plot_wireframe(x_sphere, y_sphere, z_sphere,
+                        color='k',
+                        linewidth=0.2,
+                        label='')
     ax0.plot(x[:,0],x[:,1],x[:,2],
              color='tab:blue',
              label='Inspector')
@@ -41,8 +42,14 @@ def plot_solution3(x, u, s, T):
     ulim = max(ax0.get_xlim()[1], ax0.get_ylim()[1], ax0.get_zlim()[1])
     llim = min(ax0.get_xlim()[0], ax0.get_ylim()[0], ax0.get_zlim()[0])
     z_scale = 1.3
+    lim_range = ulim - llim
+    avg_x2 = mean(x[:,2])
+    llim = avg_x2 - lim_range/2
+    ulim = avg_x2 + lim_range/2
     ax0.set_zlim([llim, ulim])
-    ulim = (ulim-llim)*z_scale + llim
+    lim_range = (ulim - llim)*z_scale
+    llim = -lim_range/2
+    ulim = lim_range/2
     ax0.set_xlim([llim, ulim])
     ax0.set_ylim([llim, ulim])
 
