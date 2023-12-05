@@ -53,6 +53,10 @@ def two_obstacles():
     # add cost to optimization problem
     opti.minimize(cost)
 
+    # set initial conditions
+    opti.set_initial(X, DM.zeros(n_timesteps+1, n_states))
+    opti.set_initial(U, DM.zeros(n_timesteps, n_inputs))
+
     ## solver
     # create solver
     opts = {'ipopt.print_level': 0, 'print_time': 0, 'ipopt.tol': 1e-9}
