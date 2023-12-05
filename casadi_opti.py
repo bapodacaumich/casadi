@@ -5,9 +5,9 @@ from utils import plot_solution2, plot_solution3
 import numpy as np
 import matplotlib as mpl
 from mpl_toolkits.mplot3d import Axes3D
-from initial_conditions import one_obs, two_spheres, concatenated_spheres2, concatenated_spheres3
+from initial_conditions import one_obs, two_spheres, concatenated_spheres2, concatenated_spheres3, concatenated_spheres4
 
-def two_obstacles():
+def many_obstacles():
     """
     two spheres
     """
@@ -16,7 +16,7 @@ def two_obstacles():
     dt = T/n_timesteps
 
     # x0, xf, obstacles, n_states, n_inputs, thrust_limit, fuel_cost_weight, g0, Isp = two_spheres()
-    x0, xf, obstacles, n_states, n_inputs, thrust_limit, fuel_cost_weight, g0, Isp = concatenated_spheres3(obstacle_offset=0.7)
+    x0, xf, obstacles, n_states, n_inputs, thrust_limit, fuel_cost_weight, g0, Isp = concatenated_spheres4()
     f = ode_funCW(n_states, n_inputs)
 
     # setup optimizer
@@ -135,4 +135,4 @@ def one_obstacle():
 
 
 if __name__ == "__main__":
-    two_obstacles()
+    many_obstacles()
