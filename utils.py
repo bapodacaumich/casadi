@@ -1,7 +1,7 @@
 from numpy import linspace, mgrid, pi, sin, cos, mean
 from matplotlib import pyplot as plt
 
-def plot_solution3(x, u, obs, T):
+def plot_solution3(x, u, obs, T, ax0=None, plot_state=False, plot_actions=True, save_fig_file=None):
     """
     2D solution space
     x - states shape(N,6)
@@ -12,8 +12,9 @@ def plot_solution3(x, u, obs, T):
     t = linspace(0,T,N)
     qs = 5 # quiver spacing: spacing of visual control actions along path
 
-    fig = plt.figure()
-    ax0 = fig.add_subplot(projection='3d')
+    if ax0 is None:
+        fig = plt.figure()
+        ax0 = fig.add_subplot(projection='3d')
 
     for s in obs:
         # draw sphere
@@ -32,12 +33,13 @@ def plot_solution3(x, u, obs, T):
     ax0.plot(x[:,0],x[:,1],x[:,2],
              color='tab:blue',
              label='Inspector')
-    ax0.quiver(x[:-1:qs,0],x[:-1:qs,1],x[:-1:qs,2],
-               u[::qs,0],  u[::qs,1],  u[::qs,2],
-               color='tab:red',
-               label='Thrust',
-               length=0.4,
-               normalize=True)
+    if plot_actions:
+        ax0.quiver(x[:-1:qs,0],x[:-1:qs,1],x[:-1:qs,2],
+                u[::qs,0],  u[::qs,1],  u[::qs,2],
+                color='tab:red',
+                label='Thrust',
+                length=0.4,
+                normalize=True)
     ax0.legend()
     ulim = max(ax0.get_xlim()[1], ax0.get_ylim()[1], ax0.get_zlim()[1])
     llim = min(ax0.get_xlim()[0], ax0.get_ylim()[0], ax0.get_zlim()[0])
@@ -53,29 +55,36 @@ def plot_solution3(x, u, obs, T):
     ax0.set_xlim([llim, ulim])
     ax0.set_ylim([llim, ulim])
 
-    fig, (ax1, ax2) = plt.subplots(2,1)
+    if plot_state:
+        fig, (ax1, ax2) = plt.subplots(2,1)
 
-    ax1.plot(t, x[:,0], label='x0')
-    ax1.plot(t, x[:,1], label='x1')
-    ax1.plot(t, x[:,2], label='x2')
-    ax1.plot(t, x[:,3], label='x0_dot')
-    ax1.plot(t, x[:,4], label='x1_dot')
-    ax1.plot(t, x[:,5], label='x2_dot')
-    ax1.set_xlabel('Time (s)')
-    ax1.set_ylabel('State')
-    ax1.set_title('Optimal States')
-    ax1.legend()
+        ax1.plot(t, x[:,0], label='x0')
+        ax1.plot(t, x[:,1], label='x1')
+        ax1.plot(t, x[:,2], label='x2')
+        ax1.plot(t, x[:,3], label='x0_dot')
+        ax1.plot(t, x[:,4], label='x1_dot')
+        ax1.plot(t, x[:,5], label='x2_dot')
+        ax1.set_xlabel('Time (s)')
+        ax1.set_ylabel('State')
+        ax1.set_title('Optimal States')
+        ax1.legend()
 
-    ax2.plot(t[1:], u[:,0], label='u0')
-    ax2.plot(t[1:], u[:,1], label='u1')
-    ax2.plot(t[1:], u[:,2], label='u2')
-    ax2.set_xlabel('Time (s)')
-    ax2.set_ylabel('Thrust')
-    ax2.set_title('Optimal Control Inputs')
-    ax2.legend()
+        ax2.plot(t[1:], u[:,0], label='u0')
+        ax2.plot(t[1:], u[:,1], label='u1')
+        ax2.plot(t[1:], u[:,2], label='u2')
+        ax2.set_xlabel('Time (s)')
+        ax2.set_ylabel('Thrust')
+        ax2.set_title('Optimal Control Inputs')
+        ax2.legend()
 
     plt.tight_layout()
-    plt.show()
+    # plt.show(block=False)
+    # plt.pause(1)
+    # plt.close("all")
+    if save_fig_file is not None:
+        fig.savefig(save_fig_file, dpi=300)
+        plt.close(fig)
+    else: plt.show()
 
 
 def plot_solution2(x, u, c, T):

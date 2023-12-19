@@ -6,12 +6,13 @@ import numpy as np
 import matplotlib as mpl
 from mpl_toolkits.mplot3d import Axes3D
 from initial_conditions import one_obs, two_spheres, concatenated_spheres2, concatenated_spheres3, concatenated_spheres4
+from tqdm import tqdm
 
 def many_obstacles():
     """
     two spheres
     """
-    n_timesteps = 100
+    n_timesteps = 50
     T = 20.0
     dt = T/n_timesteps
 
@@ -59,7 +60,7 @@ def many_obstacles():
 
     ## solver
     # create solver
-    opts = {'ipopt.print_level': 0, 'print_time': 0, 'ipopt.tol': 1e-9}
+    opts = {'ipopt.print_level': 0, 'print_time': 0, 'ipopt.tol': 1e-5}
     opti.solver('ipopt', opts)
 
     # solve problem
@@ -71,14 +72,15 @@ def many_obstacles():
 
     plot_solution3(x_opt, u_opt, obstacles, T)
 
-def one_obstacle():
+# def one_obstacle(offsetx, offsety):
+def one_obstacle(offsetx=0.6, offsety=0.5, visualize=False):
     ## problem size
     threeD = True
-    n_timesteps = 400
+    n_timesteps = 100
     T = 10.0
     dt = T/n_timesteps
 
-    x0, xf, obs, n_states, n_inputs, thrust_limit, fuel_cost_weight, g0, Isp = one_obs(threespace=threeD)
+    x0, xf, obs, n_states, n_inputs, thrust_limit, fuel_cost_weight, g0, Isp = one_obs(threespace=threeD, ox=offsetx, oy=offsety)
 
     ## define ode
     # f = ode_fun3(n_states, n_inputs)
@@ -120,6 +122,17 @@ def one_obstacle():
     # add cost to optimization problem
     opti.minimize(cost)
 
+    # look at solution at each iteration
+    if visualize:
+        save_file = os.path.join(os.getcwd(), 'optimization_steps', 'one_obstacle', 'offsetx_' + str(offsetx) + '_offsety_' + str(offsety))
+        if not os.path.exists(save_file):
+            os.mkdir(save_file)
+        opti.callback(lambda i: plot_solution3(opti.debug.value(X), opti.debug.value(U), [obs], T, save_fig_file=os.path.join(save_file, 'iteration_' + str(i))))
+
+    # set initial conditions
+    opti.set_initial(X, DM.zeros(n_timesteps+1, n_states))
+    opti.set_initial(U, DM.zeros(n_timesteps, n_inputs))
+
     ## solver
     # create solver
     opts = {'ipopt.print_level': 0, 'print_time': 0, 'ipopt.tol': 1e-5}
@@ -132,11 +145,44 @@ def one_obstacle():
     x_opt = sol.value(X)
     u_opt = sol.value(U)
 
-    if threeD:
-        plot_solution3(x_opt, u_opt, [obs], T)
-    else:
-        plot_solution2(x_opt, u_opt, obs, T)
 
+    # if threeD:
+    #     plot_solution3(x_opt, u_opt, [obs], T)
+    # else:
+    #     plot_solution2(x_opt, u_opt, obs, T)
+
+
+def grid_test():
+    # many_obstacles()
+    numx = 21
+    numy = 21
+    xoffsets = np.linspace(0, 1, numx)
+    yoffsets = np.linspace(0, 1, numy)
+    solution = []
+    nosolution = []
+    for ox in tqdm(xoffsets):
+        for oy in yoffsets:
+            try: 
+                one_obstacle(offsetx=ox, offsety=oy, visualize=True)
+                solution.append([ox, oy])
+            except:
+                nosolution.append([ox, oy])
+
+    fig, ax = plt.subplots()
+
+    solution = np.array(solution).T
+    nosolution = np.array(nosolution).T
+    ax.plot(solution[0,:], solution[1,:], 'gx', lw=2, label='Converged')
+    ax.plot(nosolution[0,:], nosolution[1,:], 'rx', lw=2, label='Unable to Converge')
+    ax.set_title("Trajectory Optimization Success for Varying Planar Sphere Offsets")
+    ax.set_xlabel("X Axis")
+    ax.set_ylabel("Y Axis")
+    ax.legend()
+    ylim = ax.get_ylim()
+    ax.set_ylim([ylim[0], ylim[1]*1.2])
+    fig.savefig('grid_test_convergence_sphere.png', dpi=300)
+    plt.show()
 
 if __name__ == "__main__":
-    many_obstacles()
+    grid_test()
+    # one_obstacle(visualize=True)
