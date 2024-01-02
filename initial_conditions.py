@@ -1,5 +1,8 @@
 from casadi import vertcat
 from numpy import linspace
+from os import getcwd
+from os.path import join
+from obs import ic_circle, ic_sphere, load_mesh
 
 def concatenated_spheres4(obstacle_coords=[(0.8,1.0),(-0.8,3.0),(0.8,5.0),(0.0,8.0)], n_obs=17, goal_separation=9.1):
     """
@@ -146,20 +149,24 @@ def one_obs(threespace=True, ox=0.6, oy=0.5):
         obs = ic_circle(x0, xf)
     return x0, xf, obs, n_states, n_inputs, thrust_limit, fuel_cost_weight, g0, Isp
 
-def ic_sphere(x0, xf, s_r = 1.0, x0_offset=0.6, x1_offset=0.5, x2_factor=0.5):
-    """
-    generate sphere between x0 and xf with small amount of offset
-    """
-    s_x0 = x0[0].__float__() + x0_offset
-    s_x1 = x0[1].__float__() + x1_offset
-    s_x2 = (xf[2].__float__() - x0[2].__float__())*x2_factor
-    # s_x2 = x0[2].__float__() + x2_offset
-    return [s_x0, s_x1, s_x2, s_r]
+def convex_hull_mercury():
+    ## Constraints and Parameters
+    thrust_limit = 100.0
+    fuel_cost_weight = 1.0
+    g0 = 9.81
+    Isp = 80
 
-def ic_circle(x0, xf, s_r=1.0, x1_factor=0.5):
-    """
-    generate circle obstacle btween x0 and xf
-    """
-    s_x0 = x0[0].__float__()
-    s_x1 = (xf[1].__float__() - x0[1].__float__())*x1_factor
-    return [s_x0, s_x1, s_r]
+    # problem constraints
+    n_states = 6
+    n_inputs = 3
+ 
+    # first and final states
+    x0 = vertcat(1.5, 0.0, 0.0, 0.0, 0.0, 0.0)
+    xf = vertcat(1.5, 0.0, 2.0, 0.0, 0.0, 0.0)
+
+    # import normals and surface points
+    meshfile = join('model', 'mockup', 'mercury_convex.stl')
+    normals, points = load_mesh(meshfile)
+    obs = (normals, points)
+
+    return x0, xf, obs, n_states, n_inputs, thrust_limit, fuel_cost_weight, g0, Isp
