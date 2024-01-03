@@ -170,3 +170,53 @@ def convex_hull_mercury():
     obs = [(normals, points)]
 
     return x0, xf, obs, n_states, n_inputs, thrust_limit, fuel_cost_weight, g0, Isp
+
+def convex_hull_mockup():
+    ## Constraints and Parameters
+    thrust_limit = 100.0
+    fuel_cost_weight = 1.0
+    g0 = 9.81
+    Isp = 80
+
+    # problem constraints
+    n_states = 6
+    n_inputs = 3
+ 
+    # first and final states
+    x0 = vertcat(1.5, 0.0, 0.0, 0.0, 0.0, 0.0)
+    xf = vertcat(1.5, 0.0, 2.0, 0.0, 0.0, 0.0)
+
+    # import normals and surface points
+    obs = []
+    files = ['mercury_convex.stl', 'gemini_convex.stl', 'apollo_convex.stl', 'solar_convex.stl']
+    for f in files:
+        meshfile = join('model', 'mockup', f)
+        normals, points = load_mesh(meshfile)
+        obs.append((normals, points))
+
+    return x0, xf, obs, n_states, n_inputs, thrust_limit, fuel_cost_weight, g0, Isp
+
+
+def convex_hull_station():
+    ## Constraints and Parameters
+    thrust_limit = 100.0
+    fuel_cost_weight = 1.0
+    g0 = 9.81
+    Isp = 80
+
+    # problem constraints
+    n_states = 6
+    n_inputs = 3
+ 
+    # first and final states
+    x0 = vertcat(1.5, 0.0, 0.0, 0.0, 0.0, 0.0)
+    xf = vertcat(1.5, 0.0, 2.0, 0.0, 0.0, 0.0)
+
+    # import normals and surface points
+    obs = []
+    for i in range(15):
+        meshfile = join('model', 'mockup', str(i) + '.stl')
+        normals, points = load_mesh(meshfile)
+        obs.append((normals, points))
+
+    return x0, xf, obs, n_states, n_inputs, thrust_limit, fuel_cost_weight, g0, Isp

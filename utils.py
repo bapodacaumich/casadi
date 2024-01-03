@@ -1,8 +1,8 @@
-from numpy import linspace, mgrid, pi, sin, cos, mean, zeros, inf
+from numpy import linspace, mgrid, pi, sin, cos, mean
 from matplotlib import pyplot as plt
 from mpl_toolkits import mplot3d
 from stl import mesh
-from casadi import dot, fmax, vertcat, MX
+from casadi import dot, fmax
 
 def enforce_convex_hull(normals, points, opti, X):
     """
@@ -15,26 +15,26 @@ def enforce_convex_hull(normals, points, opti, X):
     num_normals = normals.shape[0]
     num_timesteps = X.shape[0]
 
-    constraint = []
+    # for each state timestep we apply the convex hull keepout constraint
     for j in range(num_timesteps):
+
         # create a convex hull keepout constraint for each time step:
-        dot_max = -inf
+        dot_max = -1 # we can instantiate the max dot product as -1 because dot products less than zero do not satisfy the constraint (we take maximum)
         for i in range(num_normals):
+
+            # first retrieve parameters for each face instance
             n = normals[[i],:] # face normal
             p = points[[i],:] # centroid corresponding to face normal
             x = X[j,:3] # state at timestep j (just position)
             r = x-p # vector from face centroid to state position
-            # constraint += fmax(dot(n,r), 0) # slack variable that is positive for points in front of face
-            dot_max = fmax(dot_max, dot(n,r))
-            # constraint.append(dot(n,r))
-            # constraint = constraint or (dot(n,r) > 0)
-        opti.subject_to(dot_max > 0) # all constraints must be true
 
-    # print(constraint)
-    # zeros = MX.zeros(len(constraint))
-    # convex_constraint = vertcat(*constraint) < zeros
-    # print(dot_max)
-    # opti.subject_to(dot_max > 0) # all constraints must be true
+            # only one dot product must be greater than zero so we take the maximum value
+            # of all of them to use as the constraint (for each timestep)
+            dot_max = fmax(dot_max, dot(n,r)) 
+        
+        # if max dot product value is above zero, then constraint is met (only one needs to be greater)
+        opti.subject_to(dot_max > 0)
+
 
 def plot_solution3_convex_hull(x, u, meshfile, T, plot_state=False, plot_actions=True, save_fig_file=None):
     """
