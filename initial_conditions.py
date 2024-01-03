@@ -167,6 +167,6 @@ def convex_hull_mercury():
     # import normals and surface points
     meshfile = join('model', 'mockup', 'mercury_convex.stl')
     normals, points = load_mesh(meshfile)
-    obs = (normals, points)
+    obs = [(normals, points)]
 
     return x0, xf, obs, n_states, n_inputs, thrust_limit, fuel_cost_weight, g0, Isp

@@ -5,7 +5,7 @@ from utils import plot_solution2, plot_solution3, enforce_convex_hull, plot_solu
 import numpy as np
 import matplotlib as mpl
 from mpl_toolkits.mplot3d import Axes3D
-from initial_conditions import one_obs, two_spheres, concatenated_spheres2, concatenated_spheres3, concatenated_spheres4, convex_hull_mercury
+from initial_conditions import *
 from tqdm import tqdm
 from os import getcwd
 from os.path import join
@@ -51,8 +51,9 @@ def convex_hull_test(filename=join(getcwd(), 'model', 'mockup'), visualize=False
     cost = fuel_cost_weight * fuel_cost + goal_config_weight * goal_cost
 
     # convex hull obstacle
-    normals, points = obs
-    enforce_convex_hull(normals, points, opti, X)
+    for o in obs:
+        normals, points = o
+        enforce_convex_hull(normals, points, opti, X)
 
     # add obstacle to cost fn -- Dont need this
     # cost += obstacle_cost_weight * sumsqr(exp(-1*((X[:,:2].T - vertcat(s_x1, s_x2))**2)))

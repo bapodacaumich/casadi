@@ -1,8 +1,8 @@
-from numpy import linspace, mgrid, pi, sin, cos, mean, zeros
+from numpy import linspace, mgrid, pi, sin, cos, mean, zeros, inf
 from matplotlib import pyplot as plt
 from mpl_toolkits import mplot3d
 from stl import mesh
-from casadi import dot, fmax
+from casadi import dot, fmax, vertcat, MX
 
 def enforce_convex_hull(normals, points, opti, X):
     """
@@ -16,18 +16,25 @@ def enforce_convex_hull(normals, points, opti, X):
     num_timesteps = X.shape[0]
 
     constraint = []
-    for i in range(num_normals):
-        for j in range(num_timesteps):
+    for j in range(num_timesteps):
+        # create a convex hull keepout constraint for each time step:
+        dot_max = -inf
+        for i in range(num_normals):
             n = normals[[i],:] # face normal
             p = points[[i],:] # centroid corresponding to face normal
             x = X[j,:3] # state at timestep j (just position)
             r = x-p # vector from face centroid to state position
             # constraint += fmax(dot(n,r), 0) # slack variable that is positive for points in front of face
-            constraint.append(dot(n,r) > 0)
+            dot_max = fmax(dot_max, dot(n,r))
+            # constraint.append(dot(n,r))
             # constraint = constraint or (dot(n,r) > 0)
+        opti.subject_to(dot_max > 0) # all constraints must be true
 
-    print(constraint)
-    opti.subject_to(any(constraint)) # all constraints must be true
+    # print(constraint)
+    # zeros = MX.zeros(len(constraint))
+    # convex_constraint = vertcat(*constraint) < zeros
+    # print(dot_max)
+    # opti.subject_to(dot_max > 0) # all constraints must be true
 
 def plot_solution3_convex_hull(x, u, meshfile, T, plot_state=False, plot_actions=True, save_fig_file=None):
     """
@@ -54,7 +61,7 @@ def plot_solution3_convex_hull(x, u, meshfile, T, plot_state=False, plot_actions
     # axes.auto_scale_xyz(scale, scale, scale)
 
     axes.plot(x[:,0],x[:,1],x[:,2],
-             color='tab:blue',
+             color='k',
              label='Inspector')
     if plot_actions:
         axes.quiver(x[:-1:qs,0],x[:-1:qs,1],x[:-1:qs,2],
