@@ -209,13 +209,13 @@ def convex_hull_station():
     n_inputs = 3
  
     # first and final states
-    x0 = vertcat(1.5, 0.0, 0.0, 0.0, 0.0, 0.0)
-    xf = vertcat(1.5, 0.0, 2.0, 0.0, 0.0, 0.0)
+    x0 = vertcat(-2.0, -3.0, 0.0, 0.0, 0.0, 0.0)
+    xf = vertcat(1.0, 1.0, 0.0, 0.0, 0.0, 0.0)
 
     # import normals and surface points
     obs = []
     for i in range(15):
-        meshfile = join('model', 'mockup', str(i) + '.stl')
+        meshfile = join('model', 'convex_detailed_station', str(i) + '.stl')
         normals, points = load_mesh(meshfile)
         obs.append((normals, points))
 

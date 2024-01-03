@@ -10,7 +10,7 @@ from tqdm import tqdm
 from os import getcwd
 from os.path import join
 
-def convex_hull_test(filename=join(getcwd(), 'model', 'mockup'), visualize=False, show=False):
+def ocp_station(filename=join(getcwd(), 'model', 'convex_detailed_station'), visualize=False, show=False):
     """
     one obstacle - convex hull
     """
@@ -20,7 +20,7 @@ def convex_hull_test(filename=join(getcwd(), 'model', 'mockup'), visualize=False
     dt = T/n_timesteps
     goal_config_weight = 1
 
-    x0, xf, obs, n_states, n_inputs, thrust_limit, fuel_cost_weight, g0, Isp = convex_hull_mercury()
+    x0, xf, obs, n_states, n_inputs, thrust_limit, fuel_cost_weight, g0, Isp = convex_hull_station()
 
     ## define ode
     f = ode_funCW(n_states, n_inputs)
@@ -84,9 +84,14 @@ def convex_hull_test(filename=join(getcwd(), 'model', 'mockup'), visualize=False
     x_opt = sol.value(X)
     u_opt = sol.value(U)
 
-    meshfile = join(filename, 'mercury_convex.stl')
-    # if show: plot_solution3_convex_hull(x_opt, u_opt, meshfile, T, save_fig_file='gemini_convex_below_above')
-    if show: plot_solution3_convex_hull(x_opt, u_opt, meshfile, T)
+    # if save: plot_solution3_convex_hull(x_opt, u_opt, meshfile, T, save_fig_file='gemini_convex_below_above')
+    meshfiles = []
+    for i in range(15):
+        meshfiles.append(join(filename, str(i) + '.stl'))
+
+    if show: 
+        # meshfile = join(filename, 'mercury_convex.stl')
+        plot_solution3_convex_hull(x_opt, u_opt, meshfiles, T)
 
 
 def many_obstacles():
@@ -277,4 +282,4 @@ def grid_test():
 if __name__ == "__main__":
     # grid_test()
     # one_obstacle(visualize=True)
-    convex_hull_test(show=True)
+    ocp_station(show=True)

@@ -36,7 +36,7 @@ def enforce_convex_hull(normals, points, opti, X):
         opti.subject_to(dot_max > 0)
 
 
-def plot_solution3_convex_hull(x, u, meshfile, T, plot_state=False, plot_actions=True, save_fig_file=None):
+def plot_solution3_convex_hull(x, u, meshfiles, T, plot_state=False, plot_actions=True, save_fig_file=None):
     """
     2D solution space
     x - states shape(N,6)
@@ -53,8 +53,9 @@ def plot_solution3_convex_hull(x, u, meshfile, T, plot_state=False, plot_actions
     axes = mplot3d.Axes3D(figure)
 
     # Load the STL files and add the vectors to the plot
-    your_mesh = mesh.Mesh.from_file(meshfile)
-    axes.add_collection3d(mplot3d.art3d.Poly3DCollection(your_mesh.vectors))
+    for meshfile in meshfiles:
+        your_mesh = mesh.Mesh.from_file(meshfile)
+        axes.add_collection3d(mplot3d.art3d.Poly3DCollection(your_mesh.vectors))
 
     # Auto scale to the mesh size
     # scale = your_mesh.points.flatten()
