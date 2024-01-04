@@ -1,7 +1,7 @@
 from casadi import *
 from ode import ode_fun2, ode_fun3, ode_funCW
 from matplotlib import pyplot as plt
-from utils import plot_solution2, plot_solution3, enforce_convex_hull, plot_solution3_convex_hull, filter_path_na, compute_time_intervals
+from utils import plot_solution2, plot_solution3, enforce_convex_hull, plot_solution3_convex_hull, filter_path_na, compute_time_intervals, linear_initial_path
 import numpy as np
 import matplotlib as mpl
 from mpl_toolkits.mplot3d import Axes3D
@@ -23,6 +23,7 @@ def ocp_station_knot(meshdir=join(getcwd(), 'model', 'convex_detailed_station'),
     n_timesteps = len(dt)
     goal_config_weight = 1
     knot_cost_weight = 1
+    initial_path = linear_initial_path(knots, knot_idx, dt)
 
     x0, xf, obs, n_states, n_inputs, thrust_limit, fuel_cost_weight, g0, Isp = convex_hull_station()
 
@@ -44,7 +45,16 @@ def ocp_station_knot(meshdir=join(getcwd(), 'model', 'convex_detailed_station'),
 
     ## constrain dynamics
     for k in range(n_timesteps):
-        opti.subject_to(X[k+1,:].T == X[k,:].T + dt[k] * f(X[k,:], U[k,:]))
+        # Runge-Kutta 4 integration
+        k1 = f(X[k,:],              U[k,:])
+        k2 = f(X[k,:]+dt[k]/2*k1.T, U[k,:])
+        k3 = f(X[k,:]+dt[k]/2*k2.T, U[k,:])
+        k4 = f(X[k,:]+dt[k]*k3.T,   U[k,:])
+        x_next = X[k,:] + dt[k]/6*(k1.T+2*k2.T+2*k3.T+k4.T)
+        opti.subject_to(X[k+1,:]==x_next); # close the gaps
+
+        # for one step integration
+        # opti.subject_to(X[k+1,:].T == X[k,:].T + dt[k] * f(X[k,:], U[k,:]))
 
     # for i, k in enumerate(knot_idx):
     #     opti.subject_to(X[k,:].T == knots[i,:])
@@ -55,11 +65,10 @@ def ocp_station_knot(meshdir=join(getcwd(), 'model', 'convex_detailed_station'),
     ## cost function
     fuel_cost = sumsqr(U)/g0/Isp
 
-    # TODO: GOAL COST
-    # goal_cost = sumsqr(X[-1,:].T - )
+    ## knot cost function
     knot_cost = 0
     for i, k in enumerate(knot_idx):
-        knot_cost += sumsqr(X[k,:].T - knots[i,:])
+        knot_cost += sumsqr(X[k,:3].T - knots[i,:3])
 
     cost = fuel_cost_weight * fuel_cost + knot_cost_weight * knot_cost # + goal_config_weight * goal_cost
 
@@ -74,6 +83,9 @@ def ocp_station_knot(meshdir=join(getcwd(), 'model', 'convex_detailed_station'),
     # add cost to optimization problem
     opti.minimize(cost)
 
+    # warm start problem with linear interpolation
+    opti.set_initial(X, initial_path)
+
     # look at solution at each iteration
     # if visualize:
     #     save_file = os.path.join(os.getcwd(), 'optimization_steps', 'one_obstacle', 'offsetx_' + str(offsetx) + '_offsety_' + str(offsety))
@@ -82,7 +94,7 @@ def ocp_station_knot(meshdir=join(getcwd(), 'model', 'convex_detailed_station'),
     #     opti.callback(lambda i: plot_solution3(opti.debug.value(X), opti.debug.value(U), [obs], T, save_fig_file=os.path.join(save_file, 'iteration_' + str(i))))
 
     # set initial conditions
-    opti.set_initial(X, DM.zeros(n_timesteps+1, n_states))
+    # opti.set_initial(X, DM.zeros(n_timesteps+1, n_states))
     opti.set_initial(U, DM.zeros(n_timesteps, n_inputs))
 
     ## solver
@@ -137,7 +149,16 @@ def ocp_station(filename=join(getcwd(), 'model', 'convex_detailed_station'), vis
 
     ## constrain dynamics
     for k in range(n_timesteps):
-        opti.subject_to(X[k+1,:].T == X[k,:].T + dt * f(X[k,:], U[k,:]))
+        # Runge-Kutta 4 integration
+        k1 = f(X[k,:],           U[k,:])
+        k2 = f(X[k,:]+dt/2*k1.T, U[k,:])
+        k3 = f(X[k,:]+dt/2*k2.T, U[k,:])
+        k4 = f(X[k,:]+dt*k3.T,   U[k,:])
+        x_next = X[k,:] + dt/6*(k1.T+2*k2.T+2*k3.T+k4.T)
+        opti.subject_to(X[k+1,:]==x_next); # close the gaps
+
+        # one step integration
+        # opti.subject_to(X[k+1,:].T == X[k,:].T + dt * f(X[k,:], U[k,:]))
 
     ## constrain thrust limits
     opti.subject_to(sum1(U**2) <= thrust_limit)

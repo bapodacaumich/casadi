@@ -1,9 +1,43 @@
-from numpy import linspace, mgrid, pi, sin, cos, mean, isnan, diff, sum, floor, cumsum
+from numpy import linspace, mgrid, pi, sin, cos, mean, isnan, diff, sum, floor, cumsum, array, insert, append
 from numpy.linalg import norm
+from numpy.matlib import repmat
 from matplotlib import pyplot as plt
 from mpl_toolkits import mplot3d
 from stl import mesh
 from casadi import dot, fmax
+
+def linear_initial_path(knots, knot_idx, dt):
+    """
+    linearly interpolate between knot points 
+    """
+    lin_path = knots[[0],:]
+    for i in range(knots.shape[0]-1):
+        # start and end of linear interpolation
+        prev_pose = knots[i,:]
+        cur_pose = knots[i+1,:]
+
+        # indices of time vector for linear interpolation
+        prev_idx = knot_idx[i]
+        cur_idx = knot_idx[i+1]
+
+        # cumulative sum of the time steps to compute total time elapsed until each interpolated pose from 'prev_pose'
+        dt_cumsum = cumsum(dt[prev_idx:cur_idx])
+
+        # linear interpolation period
+        T = dt_cumsum[-1]
+
+        # constant velocity for interpolation period
+        v = (cur_pose - prev_pose)/T
+        v = repmat(v.reshape((1,-1)), dt_cumsum.shape[0], 1)
+        dt_cumsum = repmat(dt_cumsum.reshape((-1,1)), 1, 6)
+
+        # compute poses from cumsum vector
+        poses = cur_pose + v*dt_cumsum
+
+        # append linearly interpolated poses to path
+        lin_path = append(lin_path, poses, axis=0)
+
+    return lin_path
 
 def filter_path_na(path):
     """
@@ -15,6 +49,7 @@ def filter_path_na(path):
 def compute_time_intervals(knots, velocity, num_timesteps):
     """
     compute time intervals for optimal control path given a velocity and path knot points
+    knot_idx - index of state variable for knot point enforcement
     """
     # get distance between each knotpoint
     dknots = diff(knots[:,:3], axis=0)
