@@ -1,8 +1,42 @@
-from numpy import linspace, mgrid, pi, sin, cos, mean
+from numpy import linspace, mgrid, pi, sin, cos, mean, isnan, diff, sum, floor, cumsum
+from numpy.linalg import norm
 from matplotlib import pyplot as plt
 from mpl_toolkits import mplot3d
 from stl import mesh
 from casadi import dot, fmax
+
+def filter_path_na(path):
+    """
+    remove waypoints with nan from path
+    TODO: use isnan()
+    """
+    return path
+
+def compute_time_intervals(knots, velocity, num_timesteps):
+    """
+    compute time intervals for optimal control path given a velocity and path knot points
+    """
+    # get distance between each knotpoint
+    dknots = diff(knots[:,:3], axis=0)
+    ds = norm(dknots, axis=1)
+
+    total_time = sum(ds)/velocity # total path time
+
+    dt = total_time/num_timesteps # regular timestep length
+    dt_knot = ds/velocity # time between each knotpoint
+    num_dt_per_interval = (dt_knot//dt).astype(int) # number of regular timesteps between each knotpoint
+    extra_dt = dt_knot%dt # timestep remainder from regular timesteps (irregular)
+
+    # construct dt's
+    dts = []
+    knot_idx = [0]
+    for i, num_dt in enumerate(num_dt_per_interval):
+        dts.extend([dt]*num_dt)
+        dts.append(extra_dt[i])
+        knot_idx.append(knot_idx[-1] + num_dt + 1)
+
+    return dts, knot_idx
+
 
 def enforce_convex_hull(normals, points, opti, X):
     """
@@ -36,7 +70,7 @@ def enforce_convex_hull(normals, points, opti, X):
         opti.subject_to(dot_max > 0)
 
 
-def plot_solution3_convex_hull(x, u, meshfiles, T, plot_state=False, plot_actions=True, save_fig_file=None):
+def plot_solution3_convex_hull(x, u, meshfiles, t, plot_state=False, plot_actions=True, save_fig_file=None):
     """
     2D solution space
     x - states shape(N,6)
@@ -44,7 +78,7 @@ def plot_solution3_convex_hull(x, u, meshfiles, T, plot_state=False, plot_action
     s - sphere obstacle [x1, x2, x3, radius]
     """
     N = x.shape[0]
-    t = linspace(0,T,N)
+    # t = linspace(0,T,N)
     qs = 5 # quiver spacing: spacing of visual control actions along path
 
 

@@ -1,7 +1,7 @@
 from casadi import *
 from ode import ode_fun2, ode_fun3, ode_funCW
 from matplotlib import pyplot as plt
-from utils import plot_solution2, plot_solution3, enforce_convex_hull, plot_solution3_convex_hull
+from utils import plot_solution2, plot_solution3, enforce_convex_hull, plot_solution3_convex_hull, filter_path_na, compute_time_intervals
 import numpy as np
 import matplotlib as mpl
 from mpl_toolkits.mplot3d import Axes3D
@@ -10,9 +10,106 @@ from tqdm import tqdm
 from os import getcwd
 from os.path import join
 
+def ocp_station_knot(meshdir=join(getcwd(), 'model', 'convex_detailed_station'), knotfile=join(getcwd(), 'ccp_paths', '4.5m37.956129014996044.csv'), show=True):
+    """
+    ocp_station with knot points
+    """
+    path = np.loadtxt(knotfile, delimiter=',') # (N, 6)
+    knots = filter_path_na(path) # get rid of configurations with nans
+
+    velocity = 0.1
+    n_timesteps = 500
+    dt, knot_idx = compute_time_intervals(knots, velocity, n_timesteps)
+    n_timesteps = len(dt)
+    goal_config_weight = 1
+    knot_cost_weight = 1
+
+    x0, xf, obs, n_states, n_inputs, thrust_limit, fuel_cost_weight, g0, Isp = convex_hull_station()
+
+    ## define ode
+    f = ode_funCW(n_states, n_inputs)
+
+    ## instantiate opti stack
+    opti = Opti()
+
+    ## optimization variables
+    X = opti.variable(n_timesteps+1, n_states)
+    U = opti.variable(n_timesteps, n_inputs)
+
+    ### CONSTRAINTS ###
+
+    # use constraint to ensure initial and final conditions
+    # opti.subject_to(X[0,:].T == x0)
+    # opti.subject_to(X[-1,:].T == xf)
+
+    ## constrain dynamics
+    for k in range(n_timesteps):
+        opti.subject_to(X[k+1,:].T == X[k,:].T + dt[k] * f(X[k,:], U[k,:]))
+
+    # for i, k in enumerate(knot_idx):
+    #     opti.subject_to(X[k,:].T == knots[i,:])
+
+    ## constrain thrust limits
+    opti.subject_to(sum1(U**2) <= thrust_limit)
+
+    ## cost function
+    fuel_cost = sumsqr(U)/g0/Isp
+
+    # TODO: GOAL COST
+    # goal_cost = sumsqr(X[-1,:].T - )
+    knot_cost = 0
+    for i, k in enumerate(knot_idx):
+        knot_cost += sumsqr(X[k,:].T - knots[i,:])
+
+    cost = fuel_cost_weight * fuel_cost + knot_cost_weight * knot_cost # + goal_config_weight * goal_cost
+
+    # convex hull obstacle
+    for o in obs:
+        normals, points = o
+        enforce_convex_hull(normals, points, opti, X)
+
+    # add obstacle to cost fn -- Dont need this
+    # cost += obstacle_cost_weight * sumsqr(exp(-1*((X[:,:2].T - vertcat(s_x1, s_x2))**2)))
+
+    # add cost to optimization problem
+    opti.minimize(cost)
+
+    # look at solution at each iteration
+    # if visualize:
+    #     save_file = os.path.join(os.getcwd(), 'optimization_steps', 'one_obstacle', 'offsetx_' + str(offsetx) + '_offsety_' + str(offsety))
+    #     if not os.path.exists(save_file):
+    #         os.mkdir(save_file)
+    #     opti.callback(lambda i: plot_solution3(opti.debug.value(X), opti.debug.value(U), [obs], T, save_fig_file=os.path.join(save_file, 'iteration_' + str(i))))
+
+    # set initial conditions
+    opti.set_initial(X, DM.zeros(n_timesteps+1, n_states))
+    opti.set_initial(U, DM.zeros(n_timesteps, n_inputs))
+
+    ## solver
+    # create solver
+    opts = {'ipopt.print_level': 0, 'print_time': 0, 'ipopt.tol': 1e-5}
+    opti.solver('ipopt', opts)
+
+    # solve problem
+    sol = opti.solve()
+
+    # optimal states
+    x_opt = sol.value(X)
+    u_opt = sol.value(U)
+
+    # if save: plot_solution3_convex_hull(x_opt, u_opt, meshfile, T, save_fig_file='gemini_convex_below_above')
+    meshfiles = []
+    for i in range(15):
+        meshfiles.append(join(meshdir, str(i) + '.stl'))
+
+    if show: 
+        # meshfile = join(filename, 'mercury_convex.stl')
+        plot_solution3_convex_hull(x_opt, u_opt, meshfiles, dt)
+
+
 def ocp_station(filename=join(getcwd(), 'model', 'convex_detailed_station'), visualize=False, show=False):
     """
-    one obstacle - convex hull
+    detailed convex station obstacle (multiple convex parts) for planning point to point paths around
     """
     ## problem size
     n_timesteps = 100
@@ -282,4 +379,5 @@ def grid_test():
 if __name__ == "__main__":
     # grid_test()
     # one_obstacle(visualize=True)
-    ocp_station(show=True)
+    # ocp_station(show=True)
+    ocp_station_knot()

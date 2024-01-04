@@ -22,14 +22,6 @@ def ic_circle(x0, xf, s_r=1.0, x1_factor=0.5):
     s_x1 = (xf[1].__float__() - x0[1].__float__())*x1_factor
     return [s_x0, s_x1, s_r]
 
-def convex_hull(meshfile):
-    """
-    produce a list of normal vectors and mesh centroids for constraint evaluation
-    """
-
-    return
-
-
 def load_mesh(mesh_file, show=False):
     """
     import mesh .stl file
