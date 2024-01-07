@@ -4,14 +4,16 @@ from casadi import MX, vertcat, Function
 def ode_funCW(n_states, n_inputs):
     """
     ode function for free floating inspector in space using CW equations
+    - 0.2 Newtons max
+    - U in newtons
     """
-    m_I = 1 # inspector mass
+    m_I = 5.75 # inspector mass (kg)
     mu = 3.986e14 # standard gravitational parameter
     a = 6.6e6 # international space station orbit radius
     n = sqrt(mu/a**3) # orbital rate of target craft
 
-    x = MX.sym('x', n_states)
-    u = MX.sym('u', n_inputs)
+    x = MX.sym('x', n_states) # meters
+    u = MX.sym('u', n_inputs) # newtons
 
     xdot = vertcat(x[3],
                    x[4],

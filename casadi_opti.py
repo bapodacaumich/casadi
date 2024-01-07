@@ -1,4 +1,5 @@
 from casadi import *
+import casadi as c
 from ode import ode_fun2, ode_fun3, ode_funCW
 from matplotlib import pyplot as plt
 from utils import plot_solution2, plot_solution3, enforce_convex_hull, plot_solution3_convex_hull, filter_path_na, compute_time_intervals, linear_initial_path
@@ -10,7 +11,7 @@ from tqdm import tqdm
 from os import getcwd
 from os.path import join
 
-def ocp_station_knot(meshdir=join(getcwd(), 'model', 'convex_detailed_station'), knotfile=join(getcwd(), 'ccp_paths', '4.5m37.956129014996044.csv'), show=True):
+def ocp_station_knot(meshdir=join(getcwd(), 'model', 'convex_detailed_station'), knotfile=join(getcwd(), 'ccp_paths', '1.5m43.662200005359864.csv'), save_file='1.5m', show=True):
     """
     ocp_station with knot points
     """
@@ -23,9 +24,12 @@ def ocp_station_knot(meshdir=join(getcwd(), 'model', 'convex_detailed_station'),
     n_timesteps = len(dt)
     goal_config_weight = 1
     knot_cost_weight = 1
+    path_cost_weight = 1
+    fuel_cost_weight = 1
+    thrust_limit = 0.2
     initial_path = linear_initial_path(knots, knot_idx, dt)
 
-    x0, xf, obs, n_states, n_inputs, thrust_limit, fuel_cost_weight, g0, Isp = convex_hull_station()
+    obs, n_states, n_inputs, g0, Isp = convex_hull_station()
 
     ## define ode
     f = ode_funCW(n_states, n_inputs)
@@ -60,7 +64,7 @@ def ocp_station_knot(meshdir=join(getcwd(), 'model', 'convex_detailed_station'),
     #     opti.subject_to(X[k,:].T == knots[i,:])
 
     ## constrain thrust limits
-    opti.subject_to(sum1(U**2) <= thrust_limit)
+    opti.subject_to(sum1(U**2) <= thrust_limit**2)
 
     ## cost function
     fuel_cost = sumsqr(U)/g0/Isp
@@ -70,7 +74,10 @@ def ocp_station_knot(meshdir=join(getcwd(), 'model', 'convex_detailed_station'),
     for i, k in enumerate(knot_idx):
         knot_cost += sumsqr(X[k,:3].T - knots[i,:3])
 
-    cost = fuel_cost_weight * fuel_cost + knot_cost_weight * knot_cost # + goal_config_weight * goal_cost
+    ## Path length cost
+    path_cost = sumsqr(X[1:,:] - X[:-1,:]) # squared path length
+
+    cost = fuel_cost_weight * fuel_cost + knot_cost_weight * knot_cost + path_cost_weight * path_cost# + goal_config_weight * goal_cost
 
     # convex hull obstacle
     for o in obs:
@@ -109,6 +116,11 @@ def ocp_station_knot(meshdir=join(getcwd(), 'model', 'convex_detailed_station'),
     x_opt = sol.value(X)
     u_opt = sol.value(U)
 
+    # save path and actions
+    save_path = join(getcwd(), 'ocp_paths', save_file)
+    np.savetxt(save_path + '_X.csv', x_opt)
+    np.savetxt(save_path + '_U.csv', u_opt)
+
     # if save: plot_solution3_convex_hull(x_opt, u_opt, meshfile, T, save_fig_file='gemini_convex_below_above')
     meshfiles = []
     for i in range(15):
@@ -116,10 +128,15 @@ def ocp_station_knot(meshdir=join(getcwd(), 'model', 'convex_detailed_station'),
 
     if show: 
         # meshfile = join(filename, 'mercury_convex.stl')
+        ## knot cost function
+        knot_cost = 0
+        for i, k in enumerate(knot_idx):
+            knot_cost += sumsqr(x_opt[k,:3].T - knots[i,:3])
+        print('Knot Cost = ', knot_cost)
         plot_solution3_convex_hull(x_opt, u_opt, meshfiles, dt)
 
 
-def ocp_station(filename=join(getcwd(), 'model', 'convex_detailed_station'), visualize=False, show=False):
+def ocp_station(filename=join(getcwd(), 'model', 'mockup'), visualize=False, show=False):
     """
     detailed convex station obstacle (multiple convex parts) for planning point to point paths around
     """
@@ -129,7 +146,8 @@ def ocp_station(filename=join(getcwd(), 'model', 'convex_detailed_station'), vis
     dt = T/n_timesteps
     goal_config_weight = 1
 
-    x0, xf, obs, n_states, n_inputs, thrust_limit, fuel_cost_weight, g0, Isp = convex_hull_station()
+    # x0, xf, obs, n_states, n_inputs, thrust_limit, fuel_cost_weight, g0, Isp = convex_hull_station()
+    x0, xf, obs, n_states, n_inputs, thrust_limit, fuel_cost_weight, g0, Isp = convex_hull_mercury()
 
     ## define ode
     f = ode_funCW(n_states, n_inputs)
@@ -145,7 +163,7 @@ def ocp_station(filename=join(getcwd(), 'model', 'convex_detailed_station'), vis
 
     # use constraint to ensure initial and final conditions
     opti.subject_to(X[0,:].T == x0)
-    opti.subject_to(X[-1,:].T == xf)
+    # opti.subject_to(X[-1,:].T == xf)
 
     ## constrain dynamics
     for k in range(n_timesteps):
@@ -187,12 +205,16 @@ def ocp_station(filename=join(getcwd(), 'model', 'convex_detailed_station'), vis
     #     opti.callback(lambda i: plot_solution3(opti.debug.value(X), opti.debug.value(U), [obs], T, save_fig_file=os.path.join(save_file, 'iteration_' + str(i))))
 
     # set initial conditions
-    opti.set_initial(X, DM.zeros(n_timesteps+1, n_states))
+    x_initial = DM.zeros(n_timesteps+1, n_states)
+    for i in range(6):
+        x_initial[:,i] = c.linspace(x0[i], xf[i], n_timesteps+1)
+    # opti.set_initial(X, DM.zeros(n_timesteps+1, n_states))
+    opti.set_initial(X, x_initial)
     opti.set_initial(U, DM.zeros(n_timesteps, n_inputs))
 
     ## solver
     # create solver
-    opts = {'ipopt.print_level': 0, 'print_time': 0, 'ipopt.tol': 1e-5}
+    opts = {'ipopt.print_level': 0, 'print_time': 0, 'ipopt.tol': 1e-7}
     opti.solver('ipopt', opts)
 
     # solve problem
@@ -208,8 +230,9 @@ def ocp_station(filename=join(getcwd(), 'model', 'convex_detailed_station'), vis
         meshfiles.append(join(filename, str(i) + '.stl'))
 
     if show: 
-        # meshfile = join(filename, 'mercury_convex.stl')
-        plot_solution3_convex_hull(x_opt, u_opt, meshfiles, T)
+        meshfile = join(filename, 'mercury_convex.stl')
+        t = linspace(0,T,n_timesteps)
+        plot_solution3_convex_hull(x_opt, u_opt, [meshfile], t)
 
 
 def many_obstacles():

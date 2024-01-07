@@ -1,5 +1,5 @@
 from casadi import vertcat
-from numpy import linspace
+from numpy import linspace, loadtxt
 from os import getcwd
 from os.path import join
 from obs import ic_circle, ic_sphere, load_mesh
@@ -212,11 +212,15 @@ def convex_hull_station():
     x0 = vertcat(-2.0, -3.0, 0.0, 0.0, 0.0, 0.0)
     xf = vertcat(1.0, 1.0, 0.0, 0.0, 0.0, 0.0)
 
+    # get station translation for ccp path
+    station_offset = loadtxt('translate_station.txt', delimiter=',')
+
     # import normals and surface points
     obs = []
     for i in range(15):
         meshfile = join('model', 'convex_detailed_station', str(i) + '.stl')
         normals, points = load_mesh(meshfile)
+        points += station_offset
         obs.append((normals, points))
 
-    return x0, xf, obs, n_states, n_inputs, thrust_limit, fuel_cost_weight, g0, Isp
+    return obs, n_states, n_inputs, g0, Isp
