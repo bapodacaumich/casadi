@@ -1,4 +1,4 @@
-from numpy import linspace, mgrid, pi, sin, cos, mean, isnan, diff, sum, floor, cumsum, array, insert, append
+from numpy import linspace, mgrid, pi, sin, cos, mean, isnan, diff, sum, floor, cumsum, array, insert, append, loadtxt
 from numpy.linalg import norm
 from numpy.matlib import repmat
 from matplotlib import pyplot as plt
@@ -44,7 +44,8 @@ def filter_path_na(path):
     remove waypoints with nan from path
     TODO: use isnan()
     """
-    return path
+    knot_bool = ~isnan(path)[:,-1]
+    return path[knot_bool,:]
 
 def compute_time_intervals(knots, velocity, num_timesteps):
     """
@@ -121,10 +122,14 @@ def plot_solution3_convex_hull(x, u, meshfiles, t, plot_state=False, plot_action
     figure = plt.figure()
     axes = mplot3d.Axes3D(figure)
 
+    # get station offset
+    translation = loadtxt('translate_station.txt', delimiter=',').reshape(1,1,3)
+
     # Load the STL files and add the vectors to the plot
     for meshfile in meshfiles:
         your_mesh = mesh.Mesh.from_file(meshfile)
-        axes.add_collection3d(mplot3d.art3d.Poly3DCollection(your_mesh.vectors))
+        vectors = your_mesh.vectors + translation
+        axes.add_collection3d(mplot3d.art3d.Poly3DCollection(vectors))
 
     # Auto scale to the mesh size
     # scale = your_mesh.points.flatten()
