@@ -99,7 +99,7 @@ def enforce_convex_hull(normals, points, opti, X, min_station_distance):
 
             # only one dot product must be greater than zero so we take the maximum value
             # of all of them to use as the constraint (for each timestep)
-            dot_max = fmax(dot_max, dot(n,r)) 
+            dot_max = fmax(dot_max, dot(n,r)) # Given convexity, pull out the closest face to x (state)
         
         # if max dot product value is above zero, then constraint is met (only one needs to be greater)
         opti.subject_to(dot_max > min_station_distance)
