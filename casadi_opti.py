@@ -22,6 +22,7 @@ def ocp_station_knot(meshdir=join(getcwd(), 'model', 'convex_detailed_station'),
     n_timesteps = 500
     dt, knot_idx = compute_time_intervals(knots, velocity, n_timesteps)
     n_timesteps = len(dt)
+    min_station_distance = 0.5
     goal_config_weight = 1
     knot_cost_weight = 100
     path_cost_weight = 1e-11
@@ -82,7 +83,7 @@ def ocp_station_knot(meshdir=join(getcwd(), 'model', 'convex_detailed_station'),
     # convex hull obstacle
     for o in obs:
         normals, points = o
-        enforce_convex_hull(normals, points, opti, X)
+        enforce_convex_hull(normals, points, opti, X, min_station_distance)
 
     # add obstacle to cost fn -- Dont need this
     # cost += obstacle_cost_weight * sumsqr(exp(-1*((X[:,:2].T - vertcat(s_x1, s_x2))**2)))

@@ -42,7 +42,6 @@ def linear_initial_path(knots, knot_idx, dt):
 def filter_path_na(path):
     """
     remove waypoints with nan from path
-    TODO: use isnan()
     """
     knot_bool = ~isnan(path)[:,-1]
     return path[knot_bool,:]
@@ -74,7 +73,7 @@ def compute_time_intervals(knots, velocity, num_timesteps):
     return dts, knot_idx
 
 
-def enforce_convex_hull(normals, points, opti, X):
+def enforce_convex_hull(normals, points, opti, X, min_station_distance):
     """
     create constraint formulation for opti stack for a convex hull given face normals and centroids
     normals - list of 3d vectors (dir) np.ndarray(num_normals, 3)
@@ -103,7 +102,7 @@ def enforce_convex_hull(normals, points, opti, X):
             dot_max = fmax(dot_max, dot(n,r)) 
         
         # if max dot product value is above zero, then constraint is met (only one needs to be greater)
-        opti.subject_to(dot_max > 0)
+        opti.subject_to(dot_max > min_station_distance)
 
 
 def plot_solution3_convex_hull(x, u, meshfiles, t, plot_state=False, plot_actions=True, save_fig_file=None):
