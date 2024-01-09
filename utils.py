@@ -93,6 +93,7 @@ def enforce_convex_hull(normals, points, opti, X, min_station_distance):
 
             # first retrieve parameters for each face instance
             n = normals[[i],:] # face normal
+            n = n/norm(n) # normalize normal
             p = points[[i],:] # centroid corresponding to face normal
             x = X[j,:3] # state at timestep j (just position)
             r = x-p # vector from face centroid to state position
