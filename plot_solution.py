@@ -64,22 +64,27 @@ def plot_solution(station=False, mockup=False):
     # load path
     X = np.loadtxt(join(getcwd(), 'ocp_paths', '1.5m_X.csv'), delimiter=' ')
     U = np.loadtxt(join(getcwd(), 'ocp_paths', '1.5m_U.csv'), delimiter=' ')
-    # t = np.loadtxt(join(getcwd(), 'ocp_paths', '1.5m_t.csv'), delimiter=' ')
+    t = np.loadtxt(join(getcwd(), 'ocp_paths', '1.5m_t.csv'), delimiter=' ')
 
     # plot path
     axes.plot(X[:,0], X[:,1], X[:,2], 'k-')
-    qs = 5
+    qs = 1
+    s = 5 # scale factor
     axes.quiver(X[:-1:qs,0],X[:-1:qs,1],X[:-1:qs,2],
-            U[::qs,0],  U[::qs,1],  U[::qs,2],
-            color='tab:red',
-            label='Thrust',
-            length=0.4,
-            normalize=True)
+                s*U[::qs,0],s*U[::qs,1],s*U[::qs,2],
+                color='tab:red',
+                label='Thrust')
 
     # axis labels
     axes.set_xlabel('X Axis')
     axes.set_ylabel('Y Axis')
     axes.set_zlabel('Z Axis')
+
+    fig, ax = plt.subplots()
+    ax.plot(t[:-1], np.sqrt(np.sum(U**2, axis=1)))
+    ax.set_xlabel('Time (s)')
+    ax.set_ylabel('Thrust Magnitude')
+    ax.set_title('Thrust Magnitude, Duration = ' + str(t[-1])[:6] + 's')
 
     # plot fig
     plt.show()
@@ -90,4 +95,4 @@ def plot_solution(station=False, mockup=False):
     # figure.savefig(savepath, dpi=300)
 
 if __name__ == '__main__':
-    plot_solution(mockup=True)
+    plot_solution(station=True)
