@@ -47,16 +47,26 @@ def plot_solution():
 
     # plot path
     axes.plot(X[:,0], X[:,1], X[:,2], 'k-')
+    qs = 5
+    axes.quiver(X[:-1:qs,0],X[:-1:qs,1],X[:-1:qs,2],
+            U[::qs,0],  U[::qs,1],  U[::qs,2],
+            color='tab:red',
+            label='Thrust',
+            length=0.4,
+            normalize=True)
 
     # axis labels
     axes.set_xlabel('X Axis')
     axes.set_ylabel('Y Axis')
     axes.set_zlabel('Z Axis')
 
+    # plot fig
+    plt.show()
+
     # savefig
-    savepath = join(getcwd(), 'gcf.png')
-    print('saving: ', savepath)
-    figure.savefig(savepath, dpi=300)
+    # savepath = join(getcwd(), 'gcf.png')
+    # print('saving: ', savepath)
+    # figure.savefig(savepath, dpi=300)
 
 if __name__ == '__main__':
     plot_solution()

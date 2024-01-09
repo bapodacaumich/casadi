@@ -102,12 +102,14 @@ def mockup():
         # Load the STL files and add the vectors to the plot
         your_mesh = mesh.Mesh.from_file(meshfile)
         axes.add_collection3d(mplot3d.art3d.Poly3DCollection(your_mesh.vectors))
-        normalized_normals = your_mesh.normals/norm(your_mesh.normals, axis=1, keepdims=True)
-        axes.quiver(your_mesh.v0[:,0], your_mesh.v0[:,1], your_mesh.v0[:,2],
-                    normalized_normals[:,0], normalized_normals[:,1], normalized_normals[:,2],
-                    color='tab:red',
-                    length=0.3
-                    )
+        wf = your_mesh.vectors.reshape(-1, 3)
+        axes.plot(wf[:,0], wf[:,1], wf[:,2], 'k')
+        # normalized_normals = your_mesh.normals/norm(your_mesh.normals, axis=1, keepdims=True)
+        # axes.quiver(your_mesh.v0[:,0], your_mesh.v0[:,1], your_mesh.v0[:,2],
+        #             normalized_normals[:,0], normalized_normals[:,1], normalized_normals[:,2],
+        #             color='tab:red',
+        #             length=0.3
+        #             )
 
         # Auto scale to the mesh size
         scale = np.concatenate((scale, your_mesh.points.flatten()))
@@ -152,4 +154,4 @@ def mercury():
     plt.show()
 
 if __name__ == "__main__":
-    station_knots()
+    mockup()

@@ -194,7 +194,7 @@ def convex_hull_mockup():
         normals, points = load_mesh(meshfile)
         obs.append((normals, points))
 
-    return x0, xf, obs, n_states, n_inputs, thrust_limit, fuel_cost_weight, g0, Isp
+    return obs, n_states, n_inputs, g0, Isp
 
 
 def convex_hull_station():
