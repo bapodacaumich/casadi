@@ -164,7 +164,7 @@ def ocp_station_knot(meshdir=join(getcwd(), 'model', 'convex_detailed_station'),
     goal_config_weight = 1
     knot_cost_weight = 1
     path_cost_weight = 1
-    fuel_cost_weight = 0.1
+    fuel_cost_weight = 0.5
     thrust_limit = 0.2
     initial_path = linear_initial_path(knots, knot_idx, dt)
 
