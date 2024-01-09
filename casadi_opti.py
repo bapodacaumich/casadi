@@ -19,15 +19,15 @@ def ocp_station_knot(meshdir=join(getcwd(), 'model', 'convex_detailed_station'),
     path = np.loadtxt(knotfile, delimiter=',') # (N, 6)
     knots = filter_path_na(path) # get rid of configurations with nans
 
-    velocity = 0.01
-    n_timesteps = 500
+    velocity = 0.02
+    n_timesteps = 300
     dt, knot_idx = compute_time_intervals(knots, velocity, n_timesteps)
     n_timesteps = len(dt)
     min_station_distance = 0.1
     goal_config_weight = 1
     knot_cost_weight = 1
     path_cost_weight = 1
-    fuel_cost_weight = 0.5
+    fuel_cost_weight = 1
     thrust_limit = 0.2
     initial_path = linear_initial_path(knots, knot_idx, dt)
 
