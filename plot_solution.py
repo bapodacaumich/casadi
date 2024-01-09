@@ -38,7 +38,7 @@ def plot_solution():
     axes.auto_scale_xyz(scale, scale, scale)
 
     # plot knot points
-    axes.plot(knots[:,0], knots[:,1], knots[:,2],'rx-')
+    axes.plot(knots[:,0], knots[:,1], knots[:,2],'rx')
 
     # load path
     X = np.loadtxt(join(getcwd(), 'ocp_paths', '1.5m_X.csv'), delimiter=' ')

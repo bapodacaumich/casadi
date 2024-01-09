@@ -23,7 +23,7 @@ def ocp_station_knot(meshdir=join(getcwd(), 'model', 'convex_detailed_station'),
     n_timesteps = 500
     dt, knot_idx = compute_time_intervals(knots, velocity, n_timesteps)
     n_timesteps = len(dt)
-    min_station_distance = 0.5
+    min_station_distance = 0.1
     goal_config_weight = 1
     knot_cost_weight = 1
     path_cost_weight = 1
@@ -146,7 +146,7 @@ def ocp_station_knot(meshdir=join(getcwd(), 'model', 'convex_detailed_station'),
             knot_cost += sumsqr(x_opt[k,:3].T - knots[i,:3])
         print('Knot Cost = ', knot_cost)
         print('Plotting Solution')
-        plot_solution3_convex_hull(x_opt, u_opt, meshfiles, dt, save_fig_file=join('path_figures', 'ocp.png'))
+        plot_solution3_convex_hull(x_opt, u_opt, meshfiles, dt, save_fig_file=join('path_figures', 'ocp'))
 
 
 def ocp_station(filename=join(getcwd(), 'model', 'mockup'), visualize=False, show=False):
