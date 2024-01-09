@@ -16,13 +16,17 @@ def ocp_mockup_knot(meshdir=join(getcwd(), 'model', 'convex_detailed_station'), 
     ocp_station with knot points
     """
     print('Importing Initial Conditions...')
-    knots = np.array([])
+    # three knot points
+    knots = np.array([[1.5, -1.0, 0.5],
+                      [1.5, 1.0, 0.5],
+                      [0.0, 1.0, 0.5],
+                      [0.0, -1.0, 0.5]])
 
-    velocity = 0.01
-    n_timesteps = 500
+    velocity = 0.02
+    n_timesteps = 101
     dt, knot_idx = compute_time_intervals(knots, velocity, n_timesteps)
     n_timesteps = len(dt)
-    min_station_distance = 0.1
+    min_station_distance = 0.5
     goal_config_weight = 1
     knot_cost_weight = 1
     path_cost_weight = 1
@@ -98,7 +102,7 @@ def ocp_mockup_knot(meshdir=join(getcwd(), 'model', 'convex_detailed_station'), 
 
     # warm start problem with linear interpolation
     print('Setting up Warm Start...')
-    opti.set_initial(X, initial_path)
+    opti.set_initial(X[:,:3], initial_path)
 
     # look at solution at each iteration
     # if visualize:
@@ -114,7 +118,7 @@ def ocp_mockup_knot(meshdir=join(getcwd(), 'model', 'convex_detailed_station'), 
     ## solver
     # create solver
     print('Setting up Solver...')
-    opts = {'ipopt.print_level': 0, 'print_time': 0, 'ipopt.tol': 1e-5}
+    opts = {'ipopt.print_level': 0, 'print_time': 0, 'ipopt.tol': 1e-9}
     opti.solver('ipopt', opts)
 
     # solve problem
@@ -145,7 +149,7 @@ def ocp_mockup_knot(meshdir=join(getcwd(), 'model', 'convex_detailed_station'), 
             knot_cost += sumsqr(x_opt[k,:3].T - knots[i,:3])
         print('Knot Cost = ', knot_cost)
         print('Plotting Solution')
-        plot_solution3_convex_hull(x_opt, u_opt, meshfiles, dt, save_fig_file=join('path_figures', 'ocp'))
+        plot_solution3_convex_hull(x_opt, u_opt, meshfiles, dt, station=False)
 
 
 def ocp_station_knot(meshdir=join(getcwd(), 'model', 'convex_detailed_station'), knotfile=join(getcwd(), 'ccp_paths', '1.5m43.662200005359864.csv'), save_file='1.5m', show=True):
@@ -236,7 +240,7 @@ def ocp_station_knot(meshdir=join(getcwd(), 'model', 'convex_detailed_station'),
 
     # warm start problem with linear interpolation
     print('Setting up Warm Start...')
-    opti.set_initial(X, initial_path)
+    opti.set_initial(X[:,:3], initial_path[:,:3])
 
     # look at solution at each iteration
     # if visualize:
@@ -283,7 +287,7 @@ def ocp_station_knot(meshdir=join(getcwd(), 'model', 'convex_detailed_station'),
             knot_cost += sumsqr(x_opt[k,:3].T - knots[i,:3])
         print('Knot Cost = ', knot_cost)
         print('Plotting Solution')
-        plot_solution3_convex_hull(x_opt, u_opt, meshfiles, dt, save_fig_file=join('path_figures', 'ocp'))
+        plot_solution3_convex_hull(x_opt, u_opt, meshfiles, dt, save_fig_file=join('path_figures', 'ocp'), station=True)
 
 
 def ocp_station(filename=join(getcwd(), 'model', 'mockup'), visualize=False, show=False):
@@ -574,4 +578,4 @@ if __name__ == "__main__":
     # grid_test()
     # one_obstacle(visualize=True)
     # ocp_station(show=True)
-    ocp_station_knot()
+    ocp_mockup_knot()

@@ -8,11 +8,17 @@ from numpy.linalg import norm
 import numpy as np
 
 
-def plot_solution():
-    knotfile=join(getcwd(), 'ccp_paths', '1.5m43.662200005359864.csv')
-    # load knot points
-    path = np.loadtxt(knotfile, delimiter=',') # (N, 6)
-    knots = filter_path_na(path) # get rid of configurations with nans
+def plot_solution(station=False, mockup=False):
+    if station:
+        knotfile=join(getcwd(), 'ccp_paths', '1.5m43.662200005359864.csv')
+        # load knot points
+        path = np.loadtxt(knotfile, delimiter=',') # (N, 6)
+        knots = filter_path_na(path) # get rid of configurations with nans
+    if mockup: 
+        knots = np.array([[1.0, -1.0, 0.5],
+                            [1.0, 1.0, 0.5],
+                            [-1.0, 1.0, 0.5],
+                            [-1.0, -1.0, 0.5]])
 
     # load station offset
     translation = np.loadtxt('translate_station.txt', delimiter=',').reshape(1,1,3)
@@ -22,18 +28,33 @@ def plot_solution():
     axes = mplot3d.Axes3D(figure)
 
     scale = np.array([0])
-    for i in range(15):
-        meshfile = join(getcwd(), 'model', 'convex_detailed_station', str(i) + '.stl')
+    if station:
+        for i in range(15):
+            meshfile = join(getcwd(), 'model', 'convex_detailed_station', str(i) + '.stl')
 
-        # Load the STL files and add the vectors to the plot
-        your_mesh = mesh.Mesh.from_file(meshfile)
-        vectors = your_mesh.vectors + translation
-        axes.add_collection3d(mplot3d.art3d.Poly3DCollection(vectors))
-        wf = vectors.reshape(-1, 3)
-        axes.plot(wf[:,0], wf[:,1], wf[:,2], 'k')
+            # Load the STL files and add the vectors to the plot
+            your_mesh = mesh.Mesh.from_file(meshfile)
+            vectors = your_mesh.vectors + translation
+            axes.add_collection3d(mplot3d.art3d.Poly3DCollection(vectors))
+            wf = vectors.reshape(-1, 3)
+            axes.plot(wf[:,0], wf[:,1], wf[:,2], 'k')
 
-        # Auto scale to the mesh size
-        scale = np.concatenate((scale, your_mesh.points.flatten()))
+            # Auto scale to the mesh size
+            scale = np.concatenate((scale, your_mesh.points.flatten()))
+    elif mockup:
+        files = ['apollo_convex.stl', 'gemini_convex.stl', 'mercury_convex.stl', 'solar_convex.stl']
+        for f in files:
+            meshfile = join(getcwd(), 'model', 'mockup', f)
+
+            # Load the STL files and add the vectors to the plot
+            your_mesh = mesh.Mesh.from_file(meshfile)
+            vectors = your_mesh.vectors
+            axes.add_collection3d(mplot3d.art3d.Poly3DCollection(vectors))
+            wf = vectors.reshape(-1, 3)
+            axes.plot(wf[:,0], wf[:,1], wf[:,2], 'k')
+
+            # Auto scale to the mesh size
+            scale = np.concatenate((scale, your_mesh.points.flatten()))
 
     axes.auto_scale_xyz(scale, scale, scale)
 
@@ -69,4 +90,4 @@ def plot_solution():
     # figure.savefig(savepath, dpi=300)
 
 if __name__ == '__main__':
-    plot_solution()
+    plot_solution(mockup=True)

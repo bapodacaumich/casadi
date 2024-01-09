@@ -5,6 +5,8 @@ from matplotlib import pyplot as plt
 from mpl_toolkits import mplot3d
 from stl import mesh
 from casadi import dot, fmax
+from os import getcwd
+from os.path import join
 
 def linear_initial_path(knots, knot_idx, dt):
     """
@@ -29,7 +31,7 @@ def linear_initial_path(knots, knot_idx, dt):
         # constant velocity for interpolation period
         v = (cur_pose - prev_pose)/T
         v = repmat(v.reshape((1,-1)), dt_cumsum.shape[0], 1)
-        dt_cumsum = repmat(dt_cumsum.reshape((-1,1)), 1, 6)
+        dt_cumsum = repmat(dt_cumsum.reshape((-1,1)), 1, 3)
 
         # compute poses from cumsum vector
         poses = cur_pose + v*dt_cumsum
@@ -106,7 +108,7 @@ def enforce_convex_hull(normals, points, opti, X, min_station_distance):
         opti.subject_to(dot_max > min_station_distance)
 
 
-def plot_solution3_convex_hull(x, u, meshfiles, t, plot_state=False, plot_actions=True, save_fig_file=None):
+def plot_solution3_convex_hull(x, u, meshfiles, t, plot_state=False, plot_actions=True, save_fig_file=None, station=True):
     """
     2D solution space
     x - states shape(N,6)
@@ -115,21 +117,28 @@ def plot_solution3_convex_hull(x, u, meshfiles, t, plot_state=False, plot_action
     """
     N = x.shape[0]
     # t = linspace(0,T,N)
-    qs = 5 # quiver spacing: spacing of visual control actions along path
+    qs = 1 # quiver spacing: spacing of visual control actions along path
 
 
     # Create a new plot
     figure = plt.figure()
     axes = mplot3d.Axes3D(figure)
 
-    # get station offset
-    translation = loadtxt('translate_station.txt', delimiter=',').reshape(1,1,3)
+    if station:
+        # get station offset
+        translation = loadtxt('translate_station.txt', delimiter=',').reshape(1,1,3)
 
-    # Load the STL files and add the vectors to the plot
-    for meshfile in meshfiles:
-        your_mesh = mesh.Mesh.from_file(meshfile)
-        vectors = your_mesh.vectors + translation
-        axes.add_collection3d(mplot3d.art3d.Poly3DCollection(vectors))
+        # Load the STL files and add the vectors to the plot
+        for meshfile in meshfiles:
+            your_mesh = mesh.Mesh.from_file(meshfile)
+            vectors = your_mesh.vectors + translation
+            axes.add_collection3d(mplot3d.art3d.Poly3DCollection(vectors))
+    else:
+        files = ['mercury_convex.stl','gemini_convex.stl']
+        for f in files:
+            meshfile = join(getcwd(), 'model', 'mockup', f)
+            your_mesh = mesh.Mesh.from_file(meshfile)
+            axes.add_collection3d(mplot3d.art3d.Poly3DCollection(your_mesh.vectors))
 
     # Auto scale to the mesh size
     # scale = your_mesh.points.flatten()
@@ -139,12 +148,11 @@ def plot_solution3_convex_hull(x, u, meshfiles, t, plot_state=False, plot_action
              color='k',
              label='Inspector')
     if plot_actions:
+        s = 10 # scale factor
         axes.quiver(x[:-1:qs,0],x[:-1:qs,1],x[:-1:qs,2],
-                u[::qs,0],  u[::qs,1],  u[::qs,2],
-                color='tab:red',
-                label='Thrust',
-                length=0.4,
-                normalize=True)
+                    s*u[::qs,0],  s*u[::qs,1],  s*u[::qs,2],
+                    color='tab:red',
+                    label='Thrust')
     axes.legend()
     ulim = max(axes.get_xlim()[1], axes.get_ylim()[1], axes.get_zlim()[1])
     llim = min(axes.get_xlim()[0], axes.get_ylim()[0], axes.get_zlim()[0])

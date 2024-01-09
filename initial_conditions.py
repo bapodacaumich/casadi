@@ -188,7 +188,7 @@ def convex_hull_mockup():
 
     # import normals and surface points
     obs = []
-    files = ['mercury_convex.stl', 'gemini_convex.stl', 'apollo_convex.stl', 'solar_convex.stl']
+    files = ['mercury_convex.stl', 'gemini_convex.stl'] #, 'apollo_convex.stl', 'solar_convex.stl']
     for f in files:
         meshfile = join('model', 'mockup', f)
         normals, points = load_mesh(meshfile)

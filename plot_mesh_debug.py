@@ -89,7 +89,14 @@ def station():
 
 
 def mockup():
-    files = ['mercury_convex.stl', 'gemini_convex.stl', 'solar_convex.stl', 'apollo_convex.stl']
+    # files = ['mercury_convex.stl', 'gemini_convex.stl', 'solar_convex.stl', 'apollo_convex.stl']
+    files = ['mercury_convex.stl', 'gemini_convex.stl']
+
+    # three knot points
+    knots = np.array([[1.5, -1.0, 0.5],
+                      [1.5, 1.0, 0.5],
+                      [0.0, 1.0, 0.5],
+                      [0.0, -1.0, 0.5]])
 
     # Create a new plot
     figure = plt.figure()
@@ -101,20 +108,23 @@ def mockup():
 
         # Load the STL files and add the vectors to the plot
         your_mesh = mesh.Mesh.from_file(meshfile)
-        axes.add_collection3d(mplot3d.art3d.Poly3DCollection(your_mesh.vectors))
+        # axes.add_collection3d(mplot3d.art3d.Poly3DCollection(your_mesh.vectors))
         wf = your_mesh.vectors.reshape(-1, 3)
         axes.plot(wf[:,0], wf[:,1], wf[:,2], 'k')
-        # normalized_normals = your_mesh.normals/norm(your_mesh.normals, axis=1, keepdims=True)
-        # axes.quiver(your_mesh.v0[:,0], your_mesh.v0[:,1], your_mesh.v0[:,2],
-        #             normalized_normals[:,0], normalized_normals[:,1], normalized_normals[:,2],
-        #             color='tab:red',
-        #             length=0.3
-        #             )
+        normalized_normals = your_mesh.normals/norm(your_mesh.normals, axis=1, keepdims=True)
+        axes.quiver(your_mesh.v0[:,0], your_mesh.v0[:,1], your_mesh.v0[:,2],
+                    normalized_normals[:,0], normalized_normals[:,1], normalized_normals[:,2],
+                    color='tab:red',
+                    length=0.3
+                    )
 
         # Auto scale to the mesh size
         scale = np.concatenate((scale, your_mesh.points.flatten()))
 
     axes.auto_scale_xyz(scale, scale, scale)
+
+    # plot knots
+    axes.plot(knots[:,0], knots[:,1], knots[:,2], 'rx')
 
     # axis labels
     axes.set_xlabel('X Axis')
