@@ -206,7 +206,7 @@ def plot_solution3(x, u, obs, T, ax0=None, plot_state=False, plot_actions=True, 
     qs = 5 # quiver spacing: spacing of visual control actions along path
 
     if ax0 is None:
-        fig = plt.figure()
+        fig0 = plt.figure()
         ax0 = fig.add_subplot(projection='3d')
 
     for s in obs:
@@ -274,8 +274,9 @@ def plot_solution3(x, u, obs, T, ax0=None, plot_state=False, plot_actions=True, 
     # plt.show(block=False)
     # plt.pause(1)
     # plt.close("all")
+    fig0 = plt.gcf()
     if save_fig_file is not None:
-        fig.savefig(save_fig_file, dpi=300)
+        fig0.savefig(save_fig_file, dpi=300)
         plt.close(fig)
     else: plt.show()
 

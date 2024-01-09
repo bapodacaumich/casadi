@@ -27,7 +27,7 @@ def ocp_station_knot(meshdir=join(getcwd(), 'model', 'convex_detailed_station'),
     goal_config_weight = 1
     knot_cost_weight = 1
     path_cost_weight = 1
-    fuel_cost_weight = 1
+    fuel_cost_weight = 0.1
     thrust_limit = 0.2
     initial_path = linear_initial_path(knots, knot_idx, dt)
 
@@ -131,6 +131,7 @@ def ocp_station_knot(meshdir=join(getcwd(), 'model', 'convex_detailed_station'),
     save_path = join(getcwd(), 'ocp_paths', save_file)
     np.savetxt(save_path + '_X.csv', x_opt)
     np.savetxt(save_path + '_U.csv', u_opt)
+    np.savetxt(save_path + '_t.csv', np.insert(np.cumsum(dt),0,0))
 
     # if save: plot_solution3_convex_hull(x_opt, u_opt, meshfile, T, save_fig_file='gemini_convex_below_above')
     meshfiles = []
@@ -145,7 +146,7 @@ def ocp_station_knot(meshdir=join(getcwd(), 'model', 'convex_detailed_station'),
             knot_cost += sumsqr(x_opt[k,:3].T - knots[i,:3])
         print('Knot Cost = ', knot_cost)
         print('Plotting Solution')
-        plot_solution3_convex_hull(x_opt, u_opt, meshfiles, dt)
+        plot_solution3_convex_hull(x_opt, u_opt, meshfiles, dt, save_fig_file=join('path_figures', 'ocp.png'))
 
 
 def ocp_station(filename=join(getcwd(), 'model', 'mockup'), visualize=False, show=False):

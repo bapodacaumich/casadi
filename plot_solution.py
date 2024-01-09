@@ -1,0 +1,62 @@
+from os import getcwd
+from os.path import join
+from stl import mesh
+from mpl_toolkits import mplot3d
+from utils import filter_path_na
+import matplotlib.pyplot as plt
+from numpy.linalg import norm
+import numpy as np
+
+
+def plot_solution():
+    knotfile=join(getcwd(), 'ccp_paths', '1.5m43.662200005359864.csv')
+    # load knot points
+    path = np.loadtxt(knotfile, delimiter=',') # (N, 6)
+    knots = filter_path_na(path) # get rid of configurations with nans
+
+    # load station offset
+    translation = np.loadtxt('translate_station.txt', delimiter=',').reshape(1,1,3)
+
+    # Create a new plot
+    figure = plt.figure()
+    axes = mplot3d.Axes3D(figure)
+
+    scale = np.array([0])
+    for i in range(15):
+        meshfile = join(getcwd(), 'model', 'convex_detailed_station', str(i) + '.stl')
+
+        # Load the STL files and add the vectors to the plot
+        your_mesh = mesh.Mesh.from_file(meshfile)
+        vectors = your_mesh.vectors + translation
+        axes.add_collection3d(mplot3d.art3d.Poly3DCollection(vectors))
+        wf = vectors.reshape(-1, 3)
+        axes.plot(wf[:,0], wf[:,1], wf[:,2], 'k')
+
+        # Auto scale to the mesh size
+        scale = np.concatenate((scale, your_mesh.points.flatten()))
+
+    axes.auto_scale_xyz(scale, scale, scale)
+
+    # plot knot points
+    axes.plot(knots[:,0], knots[:,1], knots[:,2],'rx-')
+
+    # load path
+    X = np.loadtxt(join(getcwd(), 'ocp_paths', '1.5m_X.csv'), delimiter=' ')
+    U = np.loadtxt(join(getcwd(), 'ocp_paths', '1.5m_U.csv'), delimiter=' ')
+    # t = np.loadtxt(join(getcwd(), 'ocp_paths', '1.5m_t.csv'), delimiter=' ')
+
+    # plot path
+    axes.plot(X[:,0], X[:,1], X[:,2], 'k-')
+
+    # axis labels
+    axes.set_xlabel('X Axis')
+    axes.set_ylabel('Y Axis')
+    axes.set_zlabel('Z Axis')
+
+    # savefig
+    savepath = join(getcwd(), 'gcf.png')
+    print('saving: ', savepath)
+    figure.savefig(savepath, dpi=300)
+
+if __name__ == '__main__':
+    plot_solution()
