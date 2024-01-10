@@ -61,10 +61,13 @@ def plot_solution(station=False, mockup=False):
     # plot knot points
     axes.plot(knots[:,0], knots[:,1], knots[:,2],'rx')
 
-    # load path
-    X = np.loadtxt(join(getcwd(), 'ocp_paths', '1.5m_X.csv'), delimiter=' ')
-    U = np.loadtxt(join(getcwd(), 'ocp_paths', '1.5m_U.csv'), delimiter=' ')
-    t = np.loadtxt(join(getcwd(), 'ocp_paths', '1.5m_t.csv'), delimiter=' ')
+    # # load path
+    # X = np.loadtxt(join(getcwd(), 'ocp_paths', '1.5m_X.csv'), delimiter=' ')
+    # U = np.loadtxt(join(getcwd(), 'ocp_paths', '1.5m_U.csv'), delimiter=' ')
+    # t = np.loadtxt(join(getcwd(), 'ocp_paths', '1.5m_t.csv'), delimiter=' ')
+    X = np.loadtxt(join(getcwd(), 'ocp_paths', '6340sec', '1.5m_X.csv'), delimiter=' ')
+    U = np.loadtxt(join(getcwd(), 'ocp_paths', '6340sec', '1.5m_U.csv'), delimiter=' ')
+    t = np.loadtxt(join(getcwd(), 'ocp_paths', '6340sec', '1.5m_t.csv'), delimiter=' ')
 
     # plot path
     axes.plot(X[:,0], X[:,1], X[:,2], 'k-')
