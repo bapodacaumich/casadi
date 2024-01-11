@@ -10,6 +10,7 @@ from initial_conditions import *
 from tqdm import tqdm
 from os import getcwd
 from os.path import join
+from sys import argv
 
 def ocp_mockup_knot(meshdir=join(getcwd(), 'model', 'convex_detailed_station'), knotfile=join(getcwd(), 'ccp_paths', '1.5m43.662200005359864.csv'), save_file='1.5m', show=True):
     """
@@ -25,6 +26,7 @@ def ocp_mockup_knot(meshdir=join(getcwd(), 'model', 'convex_detailed_station'), 
     velocity = 0.02
     n_timesteps = 101
     dt, knot_idx = compute_time_intervals(knots, velocity, n_timesteps)
+    print('Path Duration: ', np.sum(dt))
     n_timesteps = len(dt)
     min_station_distance = 0.5
     goal_config_weight = 1
@@ -152,17 +154,23 @@ def ocp_mockup_knot(meshdir=join(getcwd(), 'model', 'convex_detailed_station'), 
         plot_solution3_convex_hull(x_opt, u_opt, meshfiles, dt, station=False)
 
 
-def ocp_station_knot(meshdir=join(getcwd(), 'model', 'convex_detailed_station'), knotfile=join(getcwd(), 'ccp_paths', '1.5m43.662200005359864.csv'), save_file='1.5m', show=True):
+def ocp_station_knot(meshdir=join(getcwd(), 'model', 'convex_detailed_station'),
+                     knotfile=join(getcwd(), 'ccp_paths', '1.5m43.662200005359864.csv'),
+                     save_file='1.5m',
+                     show=False,
+                     thrust_limit=0.2
+                     ):
     """
     ocp_station with knot points
     """
-    print('Importing Initial Conditions...')
+    print('Importing Initial Conditions...', flush=True)
     path = np.loadtxt(knotfile, delimiter=',') # (N, 6)
     knots = filter_path_na(path) # get rid of configurations with nans
 
-    velocity = 0.1
-    n_timesteps = 2000
+    velocity = 0.2
+    n_timesteps = 400
     dt, knot_idx = compute_time_intervals(knots, velocity, n_timesteps)
+    print('Path Duration: ', np.sum(dt), flush=True)
     n_timesteps = len(dt)
     min_station_distance = 0.2
     goal_config_weight = 1
@@ -178,7 +186,7 @@ def ocp_station_knot(meshdir=join(getcwd(), 'model', 'convex_detailed_station'),
     f = ode_funCW(n_states, n_inputs)
 
     ## instantiate opti stack
-    print('Setting up Optimization Problem...')
+    print('Setting up Optimization Problem...', flush=True)
     opti = Opti()
 
     ## optimization variables
@@ -192,7 +200,7 @@ def ocp_station_knot(meshdir=join(getcwd(), 'model', 'convex_detailed_station'),
     # opti.subject_to(X[-1,:].T == xf)
 
     ## constrain dynamics
-    print('Constraining Dynamics...')
+    print('Constraining Dynamics...', flush=True)
     for k in range(n_timesteps):
         # Runge-Kutta 4 integration
         k1 = f(X[k,:],              U[k,:])
@@ -209,11 +217,11 @@ def ocp_station_knot(meshdir=join(getcwd(), 'model', 'convex_detailed_station'),
     #     opti.subject_to(X[k,:].T == knots[i,:])
 
     ## constrain thrust limits
-    print('Imposing Thrust Limits...')
+    print('Imposing Thrust Limits...', flush=True)
     opti.subject_to(sum1(U**2) <= thrust_limit**2)
 
     ## cost function
-    print('Initializaing Cost Function...')
+    print('Initializaing Cost Function...', flush=True)
     fuel_cost = sumsqr(U)/g0/Isp
 
     ## knot cost function
@@ -233,13 +241,13 @@ def ocp_station_knot(meshdir=join(getcwd(), 'model', 'convex_detailed_station'),
     opti.minimize(cost)
 
     # convex hull obstacle
-    print('Enforcing Convex Hull Obstacle...')
+    print('Enforcing Convex Hull Obstacle...', flush=True)
     for o in obs:
         normals, points = o
         enforce_convex_hull(normals, points, opti, X, min_station_distance)
 
     # warm start problem with linear interpolation
-    print('Setting up Warm Start...')
+    print('Setting up Warm Start...', flush=True)
     opti.set_initial(X[:,:3], initial_path[:,:3])
 
     # look at solution at each iteration
@@ -255,12 +263,12 @@ def ocp_station_knot(meshdir=join(getcwd(), 'model', 'convex_detailed_station'),
 
     ## solver
     # create solver
-    print('Setting up Solver...')
-    opts = {'ipopt.print_level': 0, 'print_time': 0, 'ipopt.tol': 1e-5}
+    print('Setting up Solver...', flush=True)
+    opts = {'ipopt.print_level': 0, 'print_time': 0, 'ipopt.tol': 1e-8}
     opti.solver('ipopt', opts)
 
     # solve problem
-    print('Solving OCP...')
+    print('Solving OCP...', flush=True)
     sol = opti.solve()
 
     # optimal states
@@ -268,11 +276,12 @@ def ocp_station_knot(meshdir=join(getcwd(), 'model', 'convex_detailed_station'),
     u_opt = sol.value(U)
 
     # save path and actions
-    print('Saving Solution...')
-    save_path = join(getcwd(), 'ocp_paths', save_file)
-    np.savetxt(save_path + '_X.csv', x_opt)
-    np.savetxt(save_path + '_U.csv', u_opt)
-    np.savetxt(save_path + '_t.csv', np.insert(np.cumsum(dt),0,0))
+    print('Saving Solution...', flush=True)
+    save_path = join(getcwd(), 'ocp_paths', 'thrust_test', save_file)
+    thrust_str = str(thrust_limit//1)[0] + '_' + str(((thrust_limit*10)%10)//1)[0] + str(((thrust_limit*100)%10)//1)[0]
+    np.savetxt(save_path + '_X_' + thrust_str + '.csv', x_opt)
+    np.savetxt(save_path + '_U_' + thrust_str + '.csv', u_opt)
+    np.savetxt(save_path + '_t_' + thrust_str + '.csv', np.insert(np.cumsum(dt),0,0))
 
     # if save: plot_solution3_convex_hull(x_opt, u_opt, meshfile, T, save_fig_file='gemini_convex_below_above')
     meshfiles = []
@@ -285,7 +294,11 @@ def ocp_station_knot(meshdir=join(getcwd(), 'model', 'convex_detailed_station'),
         knot_cost = 0
         for i, k in enumerate(knot_idx):
             knot_cost += sumsqr(x_opt[k,:3].T - knots[i,:3])
-        print('Knot Cost = ', knot_cost)
+        fuel_cost = np.sum(u_opt**2)/g0/Isp
+        path_cost = np.sum((x_opt[1:,:] - x_opt[:-1,:])**2)
+        print('Knot Cost = ', knot_cost, flush=True)
+        print('Fuel Cost = ', fuel_cost, flush=True)
+        print('Path Cost = ', path_cost, flush=True)
         print('Plotting Solution')
         plot_solution3_convex_hull(x_opt, u_opt, meshfiles, dt, save_fig_file=join('path_figures', 'ocp'), station=True)
 
@@ -575,7 +588,6 @@ def grid_test():
     plt.show()
 
 if __name__ == "__main__":
-    # grid_test()
-    # one_obstacle(visualize=True)
-    # ocp_station(show=True)
-    ocp_station_knot()
+    try: thrust_limit_input = argv[1]
+    except IndexError: thrust_limit_input = 0.2
+    ocp_station_knot(thrust_limit=thrust_limit_input)

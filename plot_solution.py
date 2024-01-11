@@ -4,6 +4,7 @@ from stl import mesh
 from mpl_toolkits import mplot3d
 from utils import filter_path_na
 import matplotlib.pyplot as plt
+from mpl_toolkits.mplot3d import Axes3D
 from numpy.linalg import norm
 import numpy as np
 
@@ -25,7 +26,8 @@ def plot_solution(station=False, mockup=False):
 
     # Create a new plot
     figure = plt.figure()
-    axes = mplot3d.Axes3D(figure)
+    axes = figure.add_subplot(projection='3d')
+    # axes = mplot3d.Axes3D(figure)
 
     scale = np.array([0])
     if station:
@@ -65,9 +67,12 @@ def plot_solution(station=False, mockup=False):
     # X = np.loadtxt(join(getcwd(), 'ocp_paths', '1.5m_X.csv'), delimiter=' ')
     # U = np.loadtxt(join(getcwd(), 'ocp_paths', '1.5m_U.csv'), delimiter=' ')
     # t = np.loadtxt(join(getcwd(), 'ocp_paths', '1.5m_t.csv'), delimiter=' ')
-    X = np.loadtxt(join(getcwd(), 'ocp_paths', '6340sec', '1.5m_X.csv'), delimiter=' ')
-    U = np.loadtxt(join(getcwd(), 'ocp_paths', '6340sec', '1.5m_U.csv'), delimiter=' ')
-    t = np.loadtxt(join(getcwd(), 'ocp_paths', '6340sec', '1.5m_t.csv'), delimiter=' ')
+    # X = np.loadtxt(join(getcwd(), 'ocp_paths', '6340sec', '1.5m_X.csv'), delimiter=' ')
+    # U = np.loadtxt(join(getcwd(), 'ocp_paths', '6340sec', '1.5m_U.csv'), delimiter=' ')
+    # t = np.loadtxt(join(getcwd(), 'ocp_paths', '6340sec', '1.5m_t.csv'), delimiter=' ')
+    X = np.loadtxt(join(getcwd(), 'ocp_paths', 'thrust_test', '1.5m_X_1_00.csv'), delimiter=' ')
+    U = np.loadtxt(join(getcwd(), 'ocp_paths', 'thrust_test', '1.5m_U_1_00.csv'), delimiter=' ')
+    t = np.loadtxt(join(getcwd(), 'ocp_paths', 'thrust_test', '1.5m_t_1_00.csv'), delimiter=' ')
 
     # plot path
     axes.plot(X[:,0], X[:,1], X[:,2], 'k-')
