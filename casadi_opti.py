@@ -159,7 +159,10 @@ def ocp_station_knot(meshdir=join(getcwd(), 'model', 'convex_detailed_station'),
                      save_dir='thrust_test_k_1_p_1_f_1',
                      save_file='1.5m',
                      show=False,
-                     thrust_limit=0.2
+                     thrust_limit=0.2,
+                     k_weight=1,
+                     p_weight=1,
+                     f_weight=1
                      ):
     """
     ocp_station with knot points
@@ -175,9 +178,9 @@ def ocp_station_knot(meshdir=join(getcwd(), 'model', 'convex_detailed_station'),
     n_timesteps = len(dt)
     min_station_distance = 0.2
     goal_config_weight = 1
-    knot_cost_weight = 1
-    path_cost_weight = 1
-    fuel_cost_weight = 1
+    knot_cost_weight = k_weight
+    path_cost_weight = p_weight
+    fuel_cost_weight = f_weight
     # thrust_limit = 0.2
     initial_path = linear_initial_path(knots[:,:3], knot_idx, dt)
 
@@ -592,6 +595,20 @@ def grid_test():
     plt.show()
 
 if __name__ == "__main__":
-    try: thrust_limit_input = float(argv[1])
-    except IndexError: thrust_limit_input = 0.2
-    ocp_station_knot(thrust_limit=thrust_limit_input)
+    # read in thrust limit
+    if len(argv) > 1: thrust_limit_input = float(argv[1])
+    else: thrust_limit_input = 0.2
+
+    # read in save directory
+    if len(argv) > 2: save_dir_input = argv[2]
+    else: save_dir_input='thrust_test_k_1_p_1_f_1',
+
+    # read in cost weights
+    if len(argv) > 3: knot_cost_weight = argv[3]
+    else: knot_cost_weight = 1
+    if len(argv) > 4: path_cost_weight = argv[4]
+    else: path_cost_weight = 1
+    if len(argv) > 5: fuel_cost_weight = argv[5]
+    else: fuel_cost_weight = 1
+
+    ocp_station_knot(thrust_limit=thrust_limit_input, save_dir=save_dir_input, k_weight=knot_cost_weight, p_weight=path_cost_weight, f_weight=fuel_cost_weight)
