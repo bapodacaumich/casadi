@@ -239,6 +239,8 @@ def ocp_station_knot(meshdir=join(getcwd(), 'model', 'convex_detailed_station'),
     ## Path length cost
     path_cost = sumsqr(X[1:,:] - X[:-1,:]) # squared path length
 
+    print(type(fuel_cost_weight))
+    print(type(fuel_cost))
     cost = fuel_cost_weight * fuel_cost + knot_cost_weight * knot_cost + path_cost_weight * path_cost# + goal_config_weight * goal_cost
 
     # add obstacle to cost fn -- Dont need this
@@ -604,11 +606,11 @@ if __name__ == "__main__":
     else: save_dir_input='thrust_test_k_1_p_1_f_1',
 
     # read in cost weights
-    if len(argv) > 3: knot_cost_weight = argv[3]
+    if len(argv) > 3: knot_cost_weight = float(argv[3])
     else: knot_cost_weight = 1
-    if len(argv) > 4: path_cost_weight = argv[4]
+    if len(argv) > 4: path_cost_weight = float(argv[4])
     else: path_cost_weight = 1
-    if len(argv) > 5: fuel_cost_weight = argv[5]
+    if len(argv) > 5: fuel_cost_weight = float(argv[5])
     else: fuel_cost_weight = 1
 
     ocp_station_knot(thrust_limit=thrust_limit_input, save_dir=save_dir_input, k_weight=knot_cost_weight, p_weight=path_cost_weight, f_weight=fuel_cost_weight)
