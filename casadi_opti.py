@@ -239,8 +239,6 @@ def ocp_station_knot(meshdir=join(getcwd(), 'model', 'convex_detailed_station'),
     ## Path length cost
     path_cost = sumsqr(X[1:,:] - X[:-1,:]) # squared path length
 
-    print(type(fuel_cost_weight))
-    print(type(fuel_cost))
     cost = fuel_cost_weight * fuel_cost + knot_cost_weight * knot_cost + path_cost_weight * path_cost# + goal_config_weight * goal_cost
 
     # add obstacle to cost fn -- Dont need this
