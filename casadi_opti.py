@@ -223,7 +223,10 @@ def ocp_station_knot(meshdir=join(getcwd(), 'model', 'convex_detailed_station'),
 
     ## cost function
     print('Initializaing Cost Function...', flush=True)
-    fuel_cost = sumsqr(U)/g0/Isp
+    total_impulse = 0
+    for k in range(n_timesteps):
+        total_impulse += sumsqr(U[k,:]) * dt[k]**2
+    fuel_cost = total_impulse/g0**2/Isp**2 # squared fuel cost
 
     ## knot cost function
     knot_cost = 0
