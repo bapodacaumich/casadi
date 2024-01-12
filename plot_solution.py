@@ -105,6 +105,9 @@ def plot_solution(station=False, mockup=False, soln_dir='thrust_test_k_1_p_1_f_1
     # figure.savefig(savepath, dpi=300)
 
 if __name__ == '__main__':
-    try: thrust_input = float(argv[1])
-    except IndexError: thrust_input=0.2
-    plot_solution(station=True, thrust_limit=thrust_input)
+    if len(argv) > 1: thrust_input = float(argv[1])
+    else: thrust_input = 0.2
+
+    if len(argv) > 2: soln_dir = argv[2]
+    else: soln_dir = 'thrust_test_k_1_p_1_f_1'
+    plot_solution(station=True, thrust_limit=thrust_input, soln_dir=soln_dir)
