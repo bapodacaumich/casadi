@@ -7,9 +7,10 @@ import matplotlib.pyplot as plt
 from mpl_toolkits.mplot3d import Axes3D
 from numpy.linalg import norm
 import numpy as np
+from sys import argv
 
 
-def plot_solution(station=False, mockup=False):
+def plot_solution(station=False, mockup=False, thrust_limit=0.2):
     if station:
         knotfile=join(getcwd(), 'ccp_paths', '1.5m43.662200005359864.csv')
         # load knot points
@@ -64,15 +65,16 @@ def plot_solution(station=False, mockup=False):
     axes.plot(knots[:,0], knots[:,1], knots[:,2],'rx')
 
     # # load path
+    thrust_str = str(thrust_limit)[0] + '_' + str((thrust_limit%1)*10)[0] + str(((thrust_limit*10)%1)*10)[0]
     # X = np.loadtxt(join(getcwd(), 'ocp_paths', '1.5m_X.csv'), delimiter=' ')
     # U = np.loadtxt(join(getcwd(), 'ocp_paths', '1.5m_U.csv'), delimiter=' ')
     # t = np.loadtxt(join(getcwd(), 'ocp_paths', '1.5m_t.csv'), delimiter=' ')
     # X = np.loadtxt(join(getcwd(), 'ocp_paths', '6340sec', '1.5m_X.csv'), delimiter=' ')
     # U = np.loadtxt(join(getcwd(), 'ocp_paths', '6340sec', '1.5m_U.csv'), delimiter=' ')
     # t = np.loadtxt(join(getcwd(), 'ocp_paths', '6340sec', '1.5m_t.csv'), delimiter=' ')
-    X = np.loadtxt(join(getcwd(), 'ocp_paths', 'thrust_test', '1.5m_X_1_00.csv'), delimiter=' ')
-    U = np.loadtxt(join(getcwd(), 'ocp_paths', 'thrust_test', '1.5m_U_1_00.csv'), delimiter=' ')
-    t = np.loadtxt(join(getcwd(), 'ocp_paths', 'thrust_test', '1.5m_t_1_00.csv'), delimiter=' ')
+    X = np.loadtxt(join(getcwd(), 'ocp_paths', 'thrust_test', '1.5m_X_' + thrust_str + '.csv'), delimiter=' ')
+    U = np.loadtxt(join(getcwd(), 'ocp_paths', 'thrust_test', '1.5m_U_' + thrust_str + '.csv'), delimiter=' ')
+    t = np.loadtxt(join(getcwd(), 'ocp_paths', 'thrust_test', '1.5m_t_' + thrust_str + '.csv'), delimiter=' ')
 
     # plot path
     axes.plot(X[:,0], X[:,1], X[:,2], 'k-')
@@ -103,4 +105,6 @@ def plot_solution(station=False, mockup=False):
     # figure.savefig(savepath, dpi=300)
 
 if __name__ == '__main__':
-    plot_solution(station=True)
+    try: thrust_input = float(argv[1])
+    except IndexError: thrust_input=0.2
+    plot_solution(station=True, thrust_limit=thrust_input)

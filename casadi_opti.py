@@ -32,7 +32,7 @@ def ocp_mockup_knot(meshdir=join(getcwd(), 'model', 'convex_detailed_station'), 
     goal_config_weight = 1
     knot_cost_weight = 1
     path_cost_weight = 1
-    fuel_cost_weight = 0.1
+    fuel_cost_weight = 1
     thrust_limit = 0.2
     initial_path = linear_initial_path(knots, knot_idx, dt)
 
@@ -156,6 +156,7 @@ def ocp_mockup_knot(meshdir=join(getcwd(), 'model', 'convex_detailed_station'), 
 
 def ocp_station_knot(meshdir=join(getcwd(), 'model', 'convex_detailed_station'),
                      knotfile=join(getcwd(), 'ccp_paths', '1.5m43.662200005359864.csv'),
+                     save_dir='thrust_test_k_1_p_1_f_1',
                      save_file='1.5m',
                      show=False,
                      thrust_limit=0.2
@@ -277,7 +278,7 @@ def ocp_station_knot(meshdir=join(getcwd(), 'model', 'convex_detailed_station'),
 
     # save path and actions
     print('Saving Solution...', flush=True)
-    save_path = join(getcwd(), 'ocp_paths', 'thrust_test', save_file)
+    save_path = join(getcwd(), 'ocp_paths', save_dir, save_file)
     thrust_str = str(thrust_limit//1)[0] + '_' + str(((thrust_limit*10)%10)//1)[0] + str(((thrust_limit*100)%10)//1)[0]
     np.savetxt(save_path + '_X_' + thrust_str + '.csv', x_opt)
     np.savetxt(save_path + '_U_' + thrust_str + '.csv', u_opt)
