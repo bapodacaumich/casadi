@@ -49,7 +49,7 @@ def compute_objective_costs(X,
 
     return fuel_cost, knot_cost, path_cost
 
-def plot_pareto_front(fuel_costs, knot_costs, path_costs, save_file=None):
+def plot_pareto_front(fuel_costs, knot_costs, path_costs, thrust_values, save_file=None):
     """
     plotting pareto front from data
     """
@@ -58,25 +58,35 @@ def plot_pareto_front(fuel_costs, knot_costs, path_costs, save_file=None):
 
     # fuel_costs against knot_costs
     ax0.plot(fuel_costs, knot_costs, 'rx')
-    ax0.set_title('Pareto Front: Fuel and Knot Point Costs')
+    ax0.set_title('Pareto Front: Fuel and Knot Point Costs \n with annotated Thrust Limits') 
     ax0.set_xlabel('Fuel Cost (g)')
     ax0.set_ylabel('Knot Point Cost (m)')
+    annotate_thrust(ax0, fuel_costs, knot_costs, thrust_values)
 
     # fuel_costs against path_costs
     ax1.plot(fuel_costs, path_costs, 'rx')
-    ax1.set_title('Pareto Front: Fuel and Path Costs')
+    ax1.set_title('Pareto Front: Fuel and Path Costs \n with annotated Thrust Limits')
     ax1.set_xlabel('Fuel Cost (g)')
     ax1.set_ylabel('Path Length (m)')
+    annotate_thrust(ax1, fuel_costs, path_costs, thrust_values)
 
     # knot_costs against path_costs
-    ax2.plot(fuel_costs, path_costs, 'rx')
-    ax2.set_title('Pareto Front: Knot Point and Path Costs')
+    ax2.plot(knot_costs, path_costs, 'rx')
+    ax2.set_title('Pareto Front: Knot Point and Path Costs \n with annotated Thrust Limits')
     ax2.set_xlabel('Knot Point Cost (m)')
     ax2.set_ylabel('Path Length (m)')
+    annotate_thrust(ax2, knot_costs, path_costs, thrust_values)
 
     plt.tight_layout()
     if save_file is not None: fig.savefig(save_file, dpi=300)
     plt.show()
+
+def annotate_thrust(ax, x, y, thrust_values):
+    """
+    annotate thrust value at each location (list)
+    """
+    for i, tv in enumerate(thrust_values):
+        ax.text(x[i], y[i], str(tv) + ' N')
 
 def generate_pareto_front(knotfile=join(getcwd(), 'ccp_paths', '1.5m43.662200005359864.csv'),
                           solution_dir=join(getcwd(), 'ocp_paths', 'thrust_test'),
@@ -88,7 +98,11 @@ def generate_pareto_front(knotfile=join(getcwd(), 'ccp_paths', '1.5m43.662200005
     fuel_costs = []
     knot_costs = []
     path_costs = []
-    thrust_iter = ['0_20', '0_40', '0_60', '0_80', '1_00']
+    # thrust_iter = ['0_20', '0_40', '0_60', '0_80', '1_00']
+    # thrust_values = [0.2, 0.4, 0.6, 0.8, 1.0]
+    thrust_values = [x/10 for x in range(2,11)]
+    thrust_iter = [str(x)[0] + '_' + str((x%1)*10)[0] + str(((x*10)%1)*10)[0] for x in thrust_values] # '0_20' through '1_00'
+    print(thrust_iter)
     for thrust_str_value in thrust_iter:
         X, U, t = load_solution(file_dir=solution_dir, thrust_str=thrust_str_value)
         fuel_cost, knot_cost, path_cost = compute_objective_costs(X, U, knotfile)
@@ -100,7 +114,8 @@ def generate_pareto_front(knotfile=join(getcwd(), 'ccp_paths', '1.5m43.662200005
     knot_costs = np.array(knot_costs)
     path_costs = np.array(path_costs)
 
-    plot_pareto_front(fuel_costs, knot_costs, path_costs, save_file=join(plot_file_save, 'pareto_front_' + thrust_iter[0] + '_to_' + thrust_iter[1]))
+    plot_pareto_front(fuel_costs, knot_costs, path_costs, thrust_values,
+                      save_file=join(plot_file_save, 'pareto_front_' + thrust_iter[0] + '_to_' + thrust_iter[-1]))
 
     return
 

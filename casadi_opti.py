@@ -177,7 +177,7 @@ def ocp_station_knot(meshdir=join(getcwd(), 'model', 'convex_detailed_station'),
     knot_cost_weight = 1
     path_cost_weight = 1
     fuel_cost_weight = 1
-    thrust_limit = 0.2
+    # thrust_limit = 0.2
     initial_path = linear_initial_path(knots[:,:3], knot_idx, dt)
 
     obs, n_states, n_inputs, g0, Isp = convex_hull_station()
@@ -588,6 +588,6 @@ def grid_test():
     plt.show()
 
 if __name__ == "__main__":
-    try: thrust_limit_input = argv[1]
+    try: thrust_limit_input = float(argv[1])
     except IndexError: thrust_limit_input = 0.2
     ocp_station_knot(thrust_limit=thrust_limit_input)
