@@ -1,8 +1,9 @@
 import numpy as np
 import matplotlib.pyplot as plt
-from os.path import join
-from os import getcwd
+from os.path import join, normpath, basename, exists
+from os import getcwd, mkdir
 from utils import filter_path_na, compute_time_intervals
+from sys import argv
 
 def load_solution(file_dir=join(getcwd(), 'ocp_paths', 'thrust_test'),
                   thrust_str='0_80'
@@ -89,12 +90,12 @@ def annotate_thrust(ax, x, y, thrust_values):
         ax.text(x[i], y[i], str(tv) + ' N')
 
 def generate_pareto_front(knotfile=join(getcwd(), 'ccp_paths', '1.5m43.662200005359864.csv'),
-                          solution_dir=join(getcwd(), 'ocp_paths', 'thrust_test'),
-                          plot_file_save=join(getcwd(), 'pareto_front', 'thrust_test')
+                          solution_dir=join(getcwd(), 'ocp_paths', 'thrust_test_k_1_p_1_f_1')
                           ):
     """
     generate the pareto front for set of solutions
     """
+    plot_file_save=join(getcwd(), 'pareto_front', basename(normpath(solution_dir)))
     fuel_costs = []
     knot_costs = []
     path_costs = []
@@ -102,7 +103,6 @@ def generate_pareto_front(knotfile=join(getcwd(), 'ccp_paths', '1.5m43.662200005
     # thrust_values = [0.2, 0.4, 0.6, 0.8, 1.0]
     thrust_values = [x/10 for x in range(2,11)]
     thrust_iter = [str(x)[0] + '_' + str((x%1)*10)[0] + str(((x*10)%1)*10)[0] for x in thrust_values] # '0_20' through '1_00'
-    print(thrust_iter)
     for thrust_str_value in thrust_iter:
         X, U, t = load_solution(file_dir=solution_dir, thrust_str=thrust_str_value)
         fuel_cost, knot_cost, path_cost = compute_objective_costs(X, U, knotfile)
@@ -114,10 +114,12 @@ def generate_pareto_front(knotfile=join(getcwd(), 'ccp_paths', '1.5m43.662200005
     knot_costs = np.array(knot_costs)
     path_costs = np.array(path_costs)
 
+    if not exists(plot_file_save): mkdir(plot_file_save)
     plot_pareto_front(fuel_costs, knot_costs, path_costs, thrust_values,
                       save_file=join(plot_file_save, 'pareto_front_' + thrust_iter[0] + '_to_' + thrust_iter[-1]))
-
     return
 
 if __name__ == '__main__':
-    generate_pareto_front()
+    if len(argv) > 1: solution_directory=join(getcwd(), 'ocp_paths', argv[1])
+    else: solution_directory=join(getcwd(), 'ocp_paths', 'thrust_test_k_1_p_1_f_1')
+    generate_pareto_front(solution_dir=solution_directory)
