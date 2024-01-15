@@ -167,6 +167,7 @@ def ocp_station_knot(meshdir=join(getcwd(), 'model', 'convex_detailed_station'),
     """
     ocp_station with knot points
     """
+    print('Save Directory: ', save_dir)
     print('Importing Initial Conditions...', flush=True)
     path = np.loadtxt(knotfile, delimiter=',') # (N, 6)
     knots = filter_path_na(path) # get rid of configurations with nans
