@@ -73,8 +73,8 @@ def plot_solution(station=False, mockup=False, soln_dir='thrust_test_k_1_p_1_f_1
     # U = np.loadtxt(join(getcwd(), 'ocp_paths', '6340sec', '1.5m_U.csv'), delimiter=' ')
     # t = np.loadtxt(join(getcwd(), 'ocp_paths', '6340sec', '1.5m_t.csv'), delimiter=' ')
     X = np.loadtxt(join(getcwd(), 'ocp_paths', soln_dir, '1.5m_X_' + thrust_str + '.csv'), delimiter=' ')
-    U = np.loadtxt(join(getcwd(), 'ocp_paths', 'thrust_test', '1.5m_U_' + thrust_str + '.csv'), delimiter=' ')
-    t = np.loadtxt(join(getcwd(), 'ocp_paths', 'thrust_test', '1.5m_t_' + thrust_str + '.csv'), delimiter=' ')
+    U = np.loadtxt(join(getcwd(), 'ocp_paths', soln_dir, '1.5m_U_' + thrust_str + '.csv'), delimiter=' ')
+    t = np.loadtxt(join(getcwd(), 'ocp_paths', soln_dir, '1.5m_t_' + thrust_str + '.csv'), delimiter=' ')
 
     # plot path
     axes.plot(X[:,0], X[:,1], X[:,2], 'k-')
@@ -105,9 +105,16 @@ def plot_solution(station=False, mockup=False, soln_dir='thrust_test_k_1_p_1_f_1
     # figure.savefig(savepath, dpi=300)
 
 if __name__ == '__main__':
+    # python plot_solution.py 0.2 1 1 1
     if len(argv) > 1: thrust_input = float(argv[1])
-    else: thrust_input = 0.2
+    else: thrust_input = 0.2 # float
 
-    if len(argv) > 2: soln_dir = argv[2]
-    else: soln_dir = 'thrust_test_k_1_p_1_f_1'
+    if len(argv) > 2: k_weight = argv[2] # string
+    else: k_weight = '1'
+    if len(argv) > 3: p_weight = argv[3] # string
+    else: p_weight = '1'
+    if len(argv) > 4: f_weight = argv[4] # string
+    else: f_weight = '1'
+
+    soln_dir = 'thrust_test_k_' + k_weight + '_p_' + p_weight + '_f_' + f_weight
     plot_solution(station=True, thrust_limit=thrust_input, soln_dir=soln_dir)

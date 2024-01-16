@@ -41,7 +41,7 @@ def compute_objective_costs(X,
         knot_cost += np.sum((X[k,:3].T - knots[i,:3])**2)
 
     # path cost (path length)
-    path_cost = np.sqrt(np.sum(X[1:,:] - X[:-1,:]))
+    path_cost = np.sum(np.sqrt(np.sum((X[1:,:] - X[:-1,:])**2, axis=1)))
 
     # fuel cost
     g0 = 9.81
@@ -90,7 +90,9 @@ def annotate_thrust(ax, x, y, thrust_values):
         ax.text(x[i], y[i], str(tv) + ' N')
 
 def generate_pareto_front(knotfile=join(getcwd(), 'ccp_paths', '1.5m43.662200005359864.csv'),
-                          solution_dir=join(getcwd(), 'ocp_paths', 'thrust_test_k_1_p_1_f_1')
+                          solution_dir=join(getcwd(), 'ocp_paths', 'thrust_test_k_1_p_1_f_1'),
+                          start_thrust=0.5,
+                          end_thrust=1.5
                           ):
     """
     generate the pareto front for set of solutions
@@ -101,8 +103,8 @@ def generate_pareto_front(knotfile=join(getcwd(), 'ccp_paths', '1.5m43.662200005
     path_costs = []
     # thrust_iter = ['0_20', '0_40', '0_60', '0_80', '1_00']
     # thrust_values = [0.2, 0.4, 0.6, 0.8, 1.0]
-    thrust_values = [x/10 for x in range(2,11)]
-    thrust_iter = [str(x)[0] + '_' + str((x%1)*10)[0] + str(((x*10)%1)*10)[0] for x in thrust_values] # '0_20' through '1_00'
+    thrust_values = [x/10 for x in range(int(start_thrust*10),int(end_thrust*10)+1)]
+    thrust_iter = [str(x)[0] + '_' + str(round((x%1)*10))[0] + str(round(((x*10)%1)*10))[0] for x in thrust_values] # '0_20' through '1_00'
     for thrust_str_value in thrust_iter:
         X, U, t = load_solution(file_dir=solution_dir, thrust_str=thrust_str_value)
         fuel_cost, knot_cost, path_cost = compute_objective_costs(X, U, knotfile)
@@ -120,6 +122,23 @@ def generate_pareto_front(knotfile=join(getcwd(), 'ccp_paths', '1.5m43.662200005
     return
 
 if __name__ == '__main__':
-    if len(argv) > 1: solution_directory=join(getcwd(), 'ocp_paths', argv[1])
-    else: solution_directory=join(getcwd(), 'ocp_paths', 'thrust_test_k_1_p_1_f_1')
-    generate_pareto_front(solution_dir=solution_directory)
+
+    if len(argv) > 1: k_weight = argv[1] # string
+    else: k_weight = '1'
+    if len(argv) > 2: p_weight = argv[2] # string
+    else: p_weight = '1'
+    if len(argv) > 3: f_weight = argv[3] # string
+    else: f_weight = '1'
+    if len(argv) > 4: start_thrust_input = float(argv[4])
+    else: start_thrust_input=0.2
+    if len(argv) > 5: end_thrust_input = float(argv[5])
+    else: end_thrust_input=1.0
+
+    solution_directory = join(getcwd(),
+                              'ocp_paths',
+                              'thrust_test_k_' + k_weight + '_p_' + p_weight + '_f_' + f_weight
+                              )
+
+    generate_pareto_front(solution_dir=solution_directory,
+                          start_thrust=start_thrust_input,
+                          end_thrust=end_thrust_input)

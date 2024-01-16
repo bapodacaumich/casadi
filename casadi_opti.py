@@ -2,15 +2,16 @@ from casadi import *
 import casadi as c
 from ode import ode_fun2, ode_fun3, ode_funCW
 from matplotlib import pyplot as plt
-from utils import plot_solution2, plot_solution3, enforce_convex_hull, plot_solution3_convex_hull, filter_path_na, compute_time_intervals, linear_initial_path
+from utils import plot_solution2, plot_solution3, plot_solution3_convex_hull, filter_path_na, compute_time_intervals, linear_initial_path
 import numpy as np
 import matplotlib as mpl
 from mpl_toolkits.mplot3d import Axes3D
 from initial_conditions import *
 from tqdm import tqdm
-from os import getcwd
-from os.path import join
+from os import getcwd, mkdir
+from os.path import join, exists
 from sys import argv
+from constraints import *
 
 def ocp_mockup_knot(meshdir=join(getcwd(), 'model', 'convex_detailed_station'), knotfile=join(getcwd(), 'ccp_paths', '1.5m43.662200005359864.csv'), save_file='1.5m', show=True):
     """
@@ -168,6 +169,7 @@ def ocp_station_knot(meshdir=join(getcwd(), 'model', 'convex_detailed_station'),
     ocp_station with knot points
     """
     print('Save Directory: ', save_dir)
+    if not exists(join('ocp_paths', save_dir)): mkdir(join('ocp_paths', save_dir))
     print('Importing Initial Conditions...', flush=True)
     path = np.loadtxt(knotfile, delimiter=',') # (N, 6)
     knots = filter_path_na(path) # get rid of configurations with nans
@@ -182,7 +184,6 @@ def ocp_station_knot(meshdir=join(getcwd(), 'model', 'convex_detailed_station'),
     knot_cost_weight = k_weight
     path_cost_weight = p_weight
     fuel_cost_weight = f_weight
-    # thrust_limit = 0.2
     initial_path = linear_initial_path(knots[:,:3], knot_idx, dt)
 
     obs, n_states, n_inputs, g0, Isp = convex_hull_station()
@@ -200,26 +201,18 @@ def ocp_station_knot(meshdir=join(getcwd(), 'model', 'convex_detailed_station'),
 
     ### CONSTRAINTS ###
 
-    # use constraint to ensure initial and final conditions
-    # opti.subject_to(X[0,:].T == x0)
-    # opti.subject_to(X[-1,:].T == xf)
-
     ## constrain dynamics
     print('Constraining Dynamics...', flush=True)
-    for k in range(n_timesteps):
-        # Runge-Kutta 4 integration
-        k1 = f(X[k,:],              U[k,:])
-        k2 = f(X[k,:]+dt[k]/2*k1.T, U[k,:])
-        k3 = f(X[k,:]+dt[k]/2*k2.T, U[k,:])
-        k4 = f(X[k,:]+dt[k]*k3.T,   U[k,:])
-        x_next = X[k,:] + dt[k]/6*(k1.T+2*k2.T+2*k3.T+k4.T)
-        opti.subject_to(X[k+1,:]==x_next); # close the gaps
+    integrate_runge_kutta(X, U, dt, f, opti)
 
-        # for one step integration
-        # opti.subject_to(X[k+1,:].T == X[k,:].T + dt[k] * f(X[k,:], U[k,:]))
-
-    # for i, k in enumerate(knot_idx):
-    #     opti.subject_to(X[k,:].T == knots[i,:])
+    # for k in range(n_timesteps):
+        # # Runge-Kutta 4 integration
+        # k1 = f(X[k,:],              U[k,:])
+        # k2 = f(X[k,:]+dt[k]/2*k1.T, U[k,:])
+        # k3 = f(X[k,:]+dt[k]/2*k2.T, U[k,:])
+        # k4 = f(X[k,:]+dt[k]*k3.T,   U[k,:])
+        # x_next = X[k,:] + dt[k]/6*(k1.T+2*k2.T+2*k3.T+k4.T)
+        # opti.subject_to(X[k+1,:]==x_next); # close the gaps
 
     ## constrain thrust limits
     print('Imposing Thrust Limits...', flush=True)
@@ -227,29 +220,30 @@ def ocp_station_knot(meshdir=join(getcwd(), 'model', 'convex_detailed_station'),
 
     ## cost function
     print('Initializaing Cost Function...', flush=True)
-    total_impulse = 0
-    for k in range(n_timesteps):
-        total_impulse += sumsqr(U[k,:]) * dt[k]**2
-    fuel_cost = total_impulse/g0**2/Isp**2 # squared fuel cost
+    fuel_cost = compute_fuel_cost(U, dt)
+    # total_impulse = 0
+    # for k in range(n_timesteps):
+        # total_impulse += sumsqr(U[k,:]) * dt[k]**2
+    # fuel_cost = total_impulse/g0**2/Isp**2 # squared fuel cost
 
     ## knot cost function
-    knot_cost = 0
-    for i, k in enumerate(knot_idx):
-        knot_cost += sumsqr(X[k,:3].T - knots[i,:3])
+    knot_cost = compute_knot_cost(X, knots, knot_idx)
+    # knot_cost = 0
+    # for i, k in enumerate(knot_idx):
+        # knot_cost += sumsqr(X[k,:3].T - knots[i,:3])
 
     ## Path length cost
-    path_cost = sumsqr(X[1:,:] - X[:-1,:]) # squared path length
+    path_cost = compute_path_cost(X)
+    # path_cost = sumsqr(X[1:,:] - X[:-1,:]) # squared path length
 
     cost = fuel_cost_weight * fuel_cost + knot_cost_weight * knot_cost + path_cost_weight * path_cost# + goal_config_weight * goal_cost
-
-    # add obstacle to cost fn -- Dont need this
-    # cost += obstacle_cost_weight * sumsqr(exp(-1*((X[:,:2].T - vertcat(s_x1, s_x2))**2)))
 
     # add cost to optimization problem
     opti.minimize(cost)
 
     # convex hull obstacle
     print('Enforcing Convex Hull Obstacle...', flush=True)
+    # enforce convex hull constraint for each obstacle in obs list
     for o in obs:
         normals, points = o
         enforce_convex_hull(normals, points, opti, X, min_station_distance)
@@ -272,7 +266,7 @@ def ocp_station_knot(meshdir=join(getcwd(), 'model', 'convex_detailed_station'),
     ## solver
     # create solver
     print('Setting up Solver...', flush=True)
-    opts = {'ipopt.print_level': 0, 'print_time': 0, 'ipopt.tol': 1e-8}
+    opts = {'ipopt.print_level': 0, 'print_time': 0, 'ipopt.tol': 1e-7}
     opti.solver('ipopt', opts)
 
     # solve problem
@@ -292,11 +286,11 @@ def ocp_station_knot(meshdir=join(getcwd(), 'model', 'convex_detailed_station'),
     np.savetxt(save_path + '_t_' + thrust_str + '.csv', np.insert(np.cumsum(dt),0,0))
 
     # if save: plot_solution3_convex_hull(x_opt, u_opt, meshfile, T, save_fig_file='gemini_convex_below_above')
-    meshfiles = []
-    for i in range(15):
-        meshfiles.append(join(meshdir, str(i) + '.stl'))
 
     if show: 
+        meshfiles = []
+        for i in range(15):
+            meshfiles.append(join(meshdir, str(i) + '.stl'))
         # meshfile = join(filename, 'mercury_convex.stl')
         ## knot cost function
         knot_cost = 0
@@ -596,20 +590,32 @@ def grid_test():
     plt.show()
 
 if __name__ == "__main__":
+    # example: python casadi_opti.py 0.2 1 1 1
     # read in thrust limit
     if len(argv) > 1: thrust_limit_input = float(argv[1])
     else: thrust_limit_input = 0.2
 
-    # read in save directory
-    if len(argv) > 2: save_dir_input = argv[2]
-    else: save_dir_input='thrust_test_k_1_p_1_f_1',
-
     # read in cost weights
-    if len(argv) > 3: knot_cost_weight = float(argv[3])
+    if len(argv) > 2: knot_cost_weight = float(argv[2])
     else: knot_cost_weight = 1
-    if len(argv) > 4: path_cost_weight = float(argv[4])
+
+    # parse weight for string (assume weights only go to first decimal place
+    if str(knot_cost_weight)[-1] == '0': k_str = str(knot_cost_weight)[:-2]
+    else: k_str = str(knot_cost_weight)[:-2] + '_' + str(knot_cost_weight)[-1]
+
+    if len(argv) > 3: path_cost_weight = float(argv[3])
     else: path_cost_weight = 1
-    if len(argv) > 5: fuel_cost_weight = float(argv[5])
+    if str(path_cost_weight)[-1] == '0': p_str = str(path_cost_weight)[:-2]
+    else: p_str = str(path_cost_weight)[:-2] + '_' + str(path_cost_weight)[-1]
+
+    if len(argv) > 4: fuel_cost_weight = float(argv[4])
     else: fuel_cost_weight = 1
+    if str(fuel_cost_weight)[-1] == '0': f_str = str(fuel_cost_weight)[:-2]
+    else: f_str = str(fuel_cost_weight)[:-2] + '_' + str(fuel_cost_weight)[-1]
+
+    # read in save directory
+    # if len(argv) > 2: save_dir_input = argv[2]
+    # else: save_dir_input='thrust_test_k_1_p_1_f_1',
+    save_dir_input = 'thrust_test_k_' + k_str + '_p_' + p_str + '_f_' + f_str
 
     ocp_station_knot(thrust_limit=thrust_limit_input, save_dir=save_dir_input, k_weight=knot_cost_weight, p_weight=path_cost_weight, f_weight=fuel_cost_weight)
