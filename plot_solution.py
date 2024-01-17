@@ -106,15 +106,18 @@ def plot_solution(station=False, mockup=False, soln_dir='thrust_test_k_1_p_1_f_1
 
 if __name__ == '__main__':
     # python plot_solution.py 0.2 1 1 1
-    if len(argv) > 1: thrust_input = float(argv[1])
-    else: thrust_input = 0.2 # float
+    if argv[1] == '-h':
+        print('Example Args:\npython plot_solution.py 0.2 1 1 1')
+    else:
+        if len(argv) > 1: thrust_input = float(argv[1])
+        else: thrust_input = 0.2 # float
 
-    if len(argv) > 2: k_weight = argv[2] # string
-    else: k_weight = '1'
-    if len(argv) > 3: p_weight = argv[3] # string
-    else: p_weight = '1'
-    if len(argv) > 4: f_weight = argv[4] # string
-    else: f_weight = '1'
+        if len(argv) > 2: k_weight = argv[2] # string
+        else: k_weight = '1'
+        if len(argv) > 3: p_weight = argv[3] # string
+        else: p_weight = '1'
+        if len(argv) > 4: f_weight = argv[4] # string
+        else: f_weight = '1'
 
-    soln_dir = 'thrust_test_k_' + k_weight + '_p_' + p_weight + '_f_' + f_weight
-    plot_solution(station=True, thrust_limit=thrust_input, soln_dir=soln_dir)
+        soln_dir = 'thrust_test_k_' + k_weight + '_p_' + p_weight + '_f_' + f_weight
+        plot_solution(station=True, thrust_limit=thrust_input, soln_dir=soln_dir)

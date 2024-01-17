@@ -46,7 +46,7 @@ def compute_objective_costs(X,
     # fuel cost
     g0 = 9.81
     Isp = 80
-    fuel_cost = np.sum(U**2/g0/Isp)
+    fuel_cost = np.sum(U**2/g0/Isp)*1000 # convert kg to grams
 
     return fuel_cost, knot_cost, path_cost
 
