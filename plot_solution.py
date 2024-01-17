@@ -66,12 +66,6 @@ def plot_solution(station=False, mockup=False, soln_dir='thrust_test_k_1_p_1_f_1
 
     # # load path
     thrust_str = str(thrust_limit)[0] + '_' + str((thrust_limit%1)*10)[0] + str(((thrust_limit*10)%1)*10)[0]
-    # X = np.loadtxt(join(getcwd(), 'ocp_paths', '1.5m_X.csv'), delimiter=' ')
-    # U = np.loadtxt(join(getcwd(), 'ocp_paths', '1.5m_U.csv'), delimiter=' ')
-    # t = np.loadtxt(join(getcwd(), 'ocp_paths', '1.5m_t.csv'), delimiter=' ')
-    # X = np.loadtxt(join(getcwd(), 'ocp_paths', '6340sec', '1.5m_X.csv'), delimiter=' ')
-    # U = np.loadtxt(join(getcwd(), 'ocp_paths', '6340sec', '1.5m_U.csv'), delimiter=' ')
-    # t = np.loadtxt(join(getcwd(), 'ocp_paths', '6340sec', '1.5m_t.csv'), delimiter=' ')
     X = np.loadtxt(join(getcwd(), 'ocp_paths', soln_dir, '1.5m_X_' + thrust_str + '.csv'), delimiter=' ')
     U = np.loadtxt(join(getcwd(), 'ocp_paths', soln_dir, '1.5m_U_' + thrust_str + '.csv'), delimiter=' ')
     t = np.loadtxt(join(getcwd(), 'ocp_paths', soln_dir, '1.5m_t_' + thrust_str + '.csv'), delimiter=' ')
