@@ -122,6 +122,7 @@ def generate_pareto_front(knotfile=join(getcwd(), 'ccp_paths', '1.5m43.662200005
     return
 
 if __name__ == '__main__':
+    # python pareto_front.py 1 1 1 0.2 1.5
 
     if len(argv) > 1: k_weight = argv[1] # string
     else: k_weight = '1'
