@@ -1,20 +1,2 @@
 #!/bin/bash
-python casadi_opti_station.py 0.2 100 0.1 1
-python casadi_opti_station.py 0.3 100 0.1 1
-python casadi_opti_station.py 0.4 100 0.1 1
-python casadi_opti_station.py 0.5 100 0.1 1
-python casadi_opti_station.py 0.6 100 0.1 1
-python casadi_opti_station.py 0.7 100 0.1 1
-python casadi_opti_station.py 0.8 100 0.1 1
-python casadi_opti_station.py 0.9 100 0.1 1
-python casadi_opti_station.py 1.0 100 0.1 1
-python casadi_opti_station.py 1.1 100 0.1 1
-python casadi_opti_station.py 1.2 100 0.1 1
-python casadi_opti_station.py 1.3 100 0.1 1
-python casadi_opti_station.py 1.4 100 0.1 1
-python casadi_opti_station.py 1.5 100 0.1 1
-python casadi_opti_station.py 1.6 100 0.1 1
 python casadi_opti_station.py 1.7 100 0.1 1
-python casadi_opti_station.py 1.8 100 0.1 1
-python casadi_opti_station.py 1.9 100 0.1 1
-python casadi_opti_station.py 2.0 100 0.1 1
