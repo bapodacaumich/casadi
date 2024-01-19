@@ -1,7 +1,7 @@
 from casadi import *
 from ode import ode_funCW
 from utils import plot_solution3_convex_hull, filter_path_na, compute_time_intervals, linear_initial_path
-from os import getcwd, mkdir
+from os import getcwd, mkdir, listdir
 from os.path import join, exists
 from sys import argv
 from initial_conditions import convex_hull_station
@@ -9,9 +9,11 @@ from constraints import *
 import numpy as np
 
 def ocp_station_knot(meshdir=join(getcwd(), 'model', 'convex_detailed_station'),
-                     knotfile=join(getcwd(), 'ccp_paths', '1.5m43.662200005359864.csv'),
-                     save_dir='thrust_test_k_1_p_1_f_1',
-                     save_file='1.5m',
+                     # knotfile=join(getcwd(), 'ccp_paths', '1.5m43.662200005359864.csv'),
+                     # save_dir='thrust_test_k_1_p_1_f_1',
+                     view_distance='1.5m',
+                     local=False,
+                     # save_file='1.5m',
                      show=False,
                      thrust_limit=0.2,
                      min_station_distance=1.0,
@@ -22,9 +24,15 @@ def ocp_station_knot(meshdir=join(getcwd(), 'model', 'convex_detailed_station'),
     """
     ocp_station with knot points
     """
-    print('Save Directory: ', save_dir)
-    if not exists(join('ocp_paths', save_dir)): mkdir(join('ocp_paths', save_dir))
     print('Importing Initial Conditions...', flush=True)
+
+    for file in listdir(join(getcwd(), 'ccp_paths')):
+        if str(view_distance) == file[:4]:
+            if ((file[5] == 'l') and local) or ((file[5] != 'l') and not local):
+                knotfile=join(getcwd(), 'ccp_paths', file)
+                break
+    print('Importing Knot File: ', knotfile)
+
     path = np.loadtxt(knotfile, delimiter=',') # (N, 6)
     knots = filter_path_na(path) # get rid of configurations with nans
 
@@ -106,11 +114,14 @@ def ocp_station_knot(meshdir=join(getcwd(), 'model', 'convex_detailed_station'),
 
     # save path and actions
     print('Saving Solution...', flush=True)
-    save_path = join(getcwd(), 'ocp_paths', save_dir, save_file)
-    thrust_str = str(thrust_limit//1)[0] + '_' + str(((thrust_limit*10)%10)//1)[0] + str(((thrust_limit*100)%10)//1)[0]
-    np.savetxt(save_path + '_X_' + thrust_str + '.csv', x_opt)
-    np.savetxt(save_path + '_U_' + thrust_str + '.csv', u_opt)
-    np.savetxt(save_path + '_t_' + thrust_str + '.csv', np.insert(np.cumsum(dt),0,0))
+    save_folder = join(getcwd(), 'ocp_paths', 'final')
+    if not exists(save_folder): mkdir(save_folder)
+    if local: save_path = join(save_folder, view_distance + '_local')
+    else: save_path = join(save_folder, view_distance)
+    # thrust_str = str(thrust_limit//1)[0] + '_' + str(((thrust_limit*10)%10)//1)[0] + str(((thrust_limit*100)%10)//1)[0]
+    np.savetxt(save_path + '_X.csv', x_opt)
+    np.savetxt(save_path + '_U.csv', u_opt)
+    np.savetxt(save_path + '_t.csv', np.insert(np.cumsum(dt),0,0))
 
     if show: 
         meshfiles = []
@@ -154,9 +165,14 @@ if __name__ == "__main__":
     if str(fuel_cost_weight)[-1] == '0': f_str = str(fuel_cost_weight)[:-2]
     else: f_str = str(fuel_cost_weight)[:-2] + '_' + str(fuel_cost_weight)[-1]
 
-    # read in save directory
-    # if len(argv) > 2: save_dir_input = argv[2]
-    # else: save_dir_input='thrust_test_k_1_p_1_f_1',
-    save_dir_input = 'thrust_test_k_' + k_str + '_p_' + p_str + '_f_' + f_str
+    if len(argv) > 5: view_distance = argv[5] + 'm'
+    else: view_distance='1.5m'
+    # print('View distance: ', view_distance)
 
-    ocp_station_knot(thrust_limit=thrust_limit_input, save_dir=save_dir_input, k_weight=knot_cost_weight, p_weight=path_cost_weight, f_weight=fuel_cost_weight)
+    if len(argv) > 6 and argv[6] == '-l': local_input=True
+    else: local_input=False
+    # print('Local? ', local_input)
+
+    # save_dir_input = 'thrust_test_k_' + k_str + '_p_' + p_str + '_f_' + f_str
+
+    ocp_station_knot(view_distance=view_distance, local=local_input, thrust_limit=thrust_limit_input, k_weight=knot_cost_weight, p_weight=path_cost_weight, f_weight=fuel_cost_weight)
