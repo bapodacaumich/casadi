@@ -1,4 +1,4 @@
-from os import getcwd
+from os import getcwd, listdir
 from os.path import join
 from stl import mesh
 from mpl_toolkits import mplot3d
@@ -10,9 +10,13 @@ import numpy as np
 from sys import argv
 
 
-def plot_solution(station=False, mockup=False, soln_dir='thrust_test_k_1_p_1_f_1', thrust_limit=0.2):
+def plot_solution(station=False, mockup=False, soln_dir='thrust_test_k_1_p_1_f_1', soln_file=None, thrust_limit=0.2, local=False, distance='1.5m'):
     if station:
-        knotfile=join(getcwd(), 'ccp_paths', '1.5m43.662200005359864.csv')
+        for file in listdir(join(getcwd(), 'ccp_paths')):
+            if (distance == file[:4]):
+                if not ((file[5] == 'l') ^ local):
+                    knotfile=join(getcwd(), 'ccp_paths', file)
+        # knotfile=join(getcwd(), 'ccp_paths', '1.5m43.662200005359864.csv')
         # load knot points
         path = np.loadtxt(knotfile, delimiter=',') # (N, 6)
         knots = filter_path_na(path) # get rid of configurations with nans
@@ -65,10 +69,15 @@ def plot_solution(station=False, mockup=False, soln_dir='thrust_test_k_1_p_1_f_1
     axes.plot(knots[:,0], knots[:,1], knots[:,2],'rx')
 
     # # load path
-    thrust_str = str(thrust_limit)[0] + '_' + str((thrust_limit%1)*10)[0] + str(((thrust_limit*10)%1)*10)[0]
-    X = np.loadtxt(join(getcwd(), 'ocp_paths', soln_dir, '1.5m_X_' + thrust_str + '.csv'), delimiter=' ')
-    U = np.loadtxt(join(getcwd(), 'ocp_paths', soln_dir, '1.5m_U_' + thrust_str + '.csv'), delimiter=' ')
-    t = np.loadtxt(join(getcwd(), 'ocp_paths', soln_dir, '1.5m_t_' + thrust_str + '.csv'), delimiter=' ')
+    if soln_file is None:
+        thrust_str = str(thrust_limit)[0] + '_' + str((thrust_limit%1)*10)[0] + str(((thrust_limit*10)%1)*10)[0]
+        X = np.loadtxt(join(getcwd(), 'ocp_paths', soln_dir, '1.5m_X_' + thrust_str + '.csv'), delimiter=' ')
+        U = np.loadtxt(join(getcwd(), 'ocp_paths', soln_dir, '1.5m_U_' + thrust_str + '.csv'), delimiter=' ')
+        t = np.loadtxt(join(getcwd(), 'ocp_paths', soln_dir, '1.5m_t_' + thrust_str + '.csv'), delimiter=' ')
+    else:
+        X = np.loadtxt(soln_file + '_X.csv', delimiter=' ')
+        U = np.loadtxt(soln_file + '_U.csv', delimiter=' ')
+        t = np.loadtxt(soln_file + '_t.csv', delimiter=' ')
 
     # plot path
     axes.plot(X[:,0], X[:,1], X[:,2], 'k-')
@@ -102,6 +111,11 @@ if __name__ == '__main__':
     # python plot_solution.py 0.2 1 1 1
     if argv[1] == '-h':
         print('Example Args:\npython plot_solution.py 0.2 1 1 1')
+    elif argv[1] == '-d':
+        soln_file_input = join(getcwd(), 'ocp_paths', 'final', argv[2])
+        if argv[2][-1] == 'l': local_input = True
+        else: local_input = False
+        plot_solution(station=True, thrust_limit=1.7, soln_file=soln_file_input, distance=argv[2][:4], local=local_input)
     else:
         if len(argv) > 1: thrust_input = float(argv[1])
         else: thrust_input = 0.2 # float
