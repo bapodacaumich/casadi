@@ -3,6 +3,7 @@ import numpy as np
 from os.path import join
 from os import getcwd
 from sys import argv
+from utils import num2str
 
 def generate_pareto_grid(knot_range=(0.1, 100, 11), 
                          fuel_range=(0.1, 100, 11),
@@ -18,17 +19,19 @@ def generate_pareto_grid(knot_range=(0.1, 100, 11),
     print('Knot Weight Range: ', knot_range)
     print('Fuel Weight Range: ', knot_range)
 
-    knot_weights = np.linspace(knot_range[0], knot_range[1], knot_range[2])
-    fuel_weights = np.linspace(fuel_range[0], fuel_range[1], fuel_range[2])
+    knot_weights = np.logspace(np.log10(knot_range[0]), np.log10(knot_range[1]), knot_range[2])
+    fuel_weights = np.logspace(np.log10(fuel_range[0]), np.log10(fuel_range[1]), fuel_range[2])
 
     for kw in knot_weights:
         for fw in fuel_weights:
             # parse kw and fw into a filename string
-            if str(kw)[-1] == '0': k_str = str(kw)[:-2]
-            else: k_str = str(kw)[:-2] + '_' + str(kw)[-1]
-            if str(fw)[-1] == '0': f_str = str(fw)[:-2]
-            else: f_str = str(fw)[:-2] + '_' + str(fw)[-1]
-            filestr = k_str + '_' + f_str
+            # if str(kw)[-1] == '0': k_str = str(kw)[:-2]
+            # else: k_str = str(kw)[:-2] + '_' + str(kw)[-1]
+            # if str(fw)[-1] == '0': f_str = str(fw)[:-2]
+            # else: f_str = str(fw)[:-2] + '_' + str(fw)[-1]
+            k_str = num2str(kw)
+            f_str = num2str(fw)
+            filestr = 'k_' + k_str + '_f_' + f_str
             print('Save path: ', join(save_dir, filestr + '_X.csv'))
 
             ocp_station_knot(save_folder=save_dir, 

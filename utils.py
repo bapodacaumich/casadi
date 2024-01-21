@@ -8,6 +8,24 @@ from casadi import dot, fmax
 from os import getcwd
 from os.path import join
 
+def num2str(num):
+    """ parse num into hundredth palce string 123.45678900000 --> 123_45. works for numbers under 1000
+
+    Args:
+        num (float): float to parse into string
+    """
+    string = ''
+    if num >= 100:
+        string += str(num/100)[0]
+        num = num % 100
+    if num >= 10: 
+        string += str(num/10)[0]
+        num = num % 10
+    string += str(num)[0] + '_'
+    num = num % 1
+    string += str(num)[2:4]
+    return string
+
 def linear_initial_path(knots, knot_idx, dt):
     """
     linearly interpolate between knot points 
