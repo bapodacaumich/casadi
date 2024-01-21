@@ -122,9 +122,9 @@ def ocp_station_knot(meshdir=join(getcwd(), 'model', 'convex_detailed_station'),
         if local: save_path = join(save_folder, view_distance + '_local')
         else: save_path = join(save_folder, view_distance)
     # thrust_str = str(thrust_limit//1)[0] + '_' + str(((thrust_limit*10)%10)//1)[0] + str(((thrust_limit*100)%10)//1)[0]
-    np.savetxt(save_path + '_X.csv', x_opt)
-    np.savetxt(save_path + '_U.csv', u_opt)
-    np.savetxt(save_path + '_t.csv', np.insert(np.cumsum(dt),0,0))
+    np.savetxt(join(save_folder, save_path + '_X.csv'), x_opt)
+    np.savetxt(join(save_folder, save_path + '_U.csv'), u_opt)
+    np.savetxt(join(save_folder, save_path + '_t.csv'), np.insert(np.cumsum(dt),0,0))
 
     if show: 
         meshfiles = []
