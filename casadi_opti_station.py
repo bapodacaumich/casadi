@@ -11,6 +11,8 @@ import numpy as np
 def ocp_station_knot(meshdir=join(getcwd(), 'model', 'convex_detailed_station'),
                      # knotfile=join(getcwd(), 'ccp_paths', '1.5m43.662200005359864.csv'),
                      # save_dir='thrust_test_k_1_p_1_f_1',
+                     save_folder=join(getcwd(), 'ocp_paths', 'final'),
+                     save_path=None,
                      view_distance='1.5m',
                      local=False,
                      # save_file='1.5m',
@@ -114,10 +116,11 @@ def ocp_station_knot(meshdir=join(getcwd(), 'model', 'convex_detailed_station'),
 
     # save path and actions
     print('Saving Solution...', flush=True)
-    save_folder = join(getcwd(), 'ocp_paths', 'final')
     if not exists(save_folder): mkdir(save_folder)
-    if local: save_path = join(save_folder, view_distance + '_local')
-    else: save_path = join(save_folder, view_distance)
+
+    if save_path is None:
+        if local: save_path = join(save_folder, view_distance + '_local')
+        else: save_path = join(save_folder, view_distance)
     # thrust_str = str(thrust_limit//1)[0] + '_' + str(((thrust_limit*10)%10)//1)[0] + str(((thrust_limit*100)%10)//1)[0]
     np.savetxt(save_path + '_X.csv', x_opt)
     np.savetxt(save_path + '_U.csv', u_opt)
