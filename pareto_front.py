@@ -2,26 +2,36 @@ import numpy as np
 import matplotlib.pyplot as plt
 from os.path import join, normpath, basename, exists
 from os import getcwd, mkdir
-from utils import filter_path_na, compute_time_intervals
+from utils import filter_path_na, compute_time_intervals, compute_path_coverage, num2str
 from sys import argv
+from tqdm import tqdm
 
 def load_solution(file_dir=join(getcwd(), 'ocp_paths', 'thrust_test'),
-                  thrust_str='0_80'
+                  thrust_str=None,
+                  kf_weights=None
                   ):
     """
     load solution files -- X (state), U (actions), and t (time vector)
     filename - file and directory
     """
 
+    X, U, t = None, None, None
     # load solutions
-    X = np.loadtxt(join(file_dir, '1.5m_X_' + thrust_str + '.csv'), delimiter=' ')
-    U = np.loadtxt(join(file_dir, '1.5m_U_' + thrust_str + '.csv'), delimiter=' ')
-    t = np.loadtxt(join(file_dir, '1.5m_t_' + thrust_str + '.csv'), delimiter=' ')
+    if thrust_str is not None:
+        X = np.loadtxt(join(file_dir, '1.5m_X_' + thrust_str + '.csv'), delimiter=' ')
+        U = np.loadtxt(join(file_dir, '1.5m_U_' + thrust_str + '.csv'), delimiter=' ')
+        t = np.loadtxt(join(file_dir, '1.5m_t_' + thrust_str + '.csv'), delimiter=' ')
+    else:
+        X = np.loadtxt(join(file_dir, 'k_' + kf_weights[0] + '_f_' + kf_weights[1] + '_X.csv'), delimiter=' ')
+        U = np.loadtxt(join(file_dir, 'k_' + kf_weights[0] + '_f_' + kf_weights[1] + '_U.csv'), delimiter=' ')
+        t = np.loadtxt(join(file_dir, 'k_' + kf_weights[0] + '_f_' + kf_weights[1] + '_t.csv'), delimiter=' ')
+        
 
     return X, U, t
 
 def compute_objective_costs(X,
                             U,
+                            t,
                             knotfile=join(getcwd(), 'ccp_paths', '1.5m43.662200005359864.csv')
                             ):
     """
@@ -46,38 +56,56 @@ def compute_objective_costs(X,
     # fuel cost
     g0 = 9.81
     Isp = 80
-    fuel_cost = np.sum(U**2/g0/Isp)*1000 # convert kg to grams
+    fuel_cost = np.sum(np.sqrt(U**2)/g0/Isp)*1000 # convert kg to grams
 
-    return fuel_cost, knot_cost, path_cost
+    coverage = compute_path_coverage(knots, X, t)
 
-def plot_pareto_front(fuel_costs, knot_costs, path_costs, thrust_values, save_file=None):
+    return fuel_cost, knot_cost, path_cost, coverage
+
+def plot_pareto_front(fuel_costs, knot_costs, path_costs, coverage, thrust_values=None, save_file=None):
     """
     plotting pareto front from data
     """
 
-    fig, ((ax0, ax1), (ax2, ax3)) = plt.subplots(2,2)
+    fig, ((ax0, ax1), (ax2, ax3)) = plt.subplots(2, 2, figsize=(50,30))
 
     # fuel_costs against knot_costs
     ax0.plot(fuel_costs, knot_costs, 'rx')
-    ax0.set_title('Pareto Front: Fuel and Knot Point Costs \n with annotated Thrust Limits') 
+    ax0.set_title('Pareto Front: Fuel and Knot Point Costs with annotated Thrust Limits') 
     ax0.set_xlabel('Fuel Cost (g)')
     ax0.set_ylabel('Knot Point Cost (m)')
-    annotate_thrust(ax0, fuel_costs, knot_costs, thrust_values)
+    if thrust_values is not None: annotate_thrust(ax0, fuel_costs, knot_costs, thrust_values)
 
-    # fuel_costs against path_costs
-    ax1.plot(fuel_costs, path_costs, 'rx')
-    ax1.set_title('Pareto Front: Fuel and Path Costs \n with annotated Thrust Limits')
+    # fuel_costs against coverage
+    ax1.plot(fuel_costs, coverage*100, 'rx')
+    ax1.set_title('Pareto Front: Fuel Costs and Coverage Ratio with annotated Thrust Limits')
     ax1.set_xlabel('Fuel Cost (g)')
-    ax1.set_ylabel('Path Length (m)')
-    annotate_thrust(ax1, fuel_costs, path_costs, thrust_values)
+    ax1.set_ylabel('Coverage (%)')
+    if thrust_values is not None: annotate_thrust(ax1, fuel_costs, coverage, thrust_values)
 
-    # knot_costs against path_costs
-    ax2.plot(knot_costs, path_costs, 'rx')
-    ax2.set_title('Pareto Front: Knot Point and Path Costs \n with annotated Thrust Limits')
-    ax2.set_xlabel('Knot Point Cost (m)')
-    ax2.set_ylabel('Path Length (m)')
-    annotate_thrust(ax2, knot_costs, path_costs, thrust_values)
+    # knot_costs against coverage
+    ax2.plot(knot_costs, coverage*100, 'rx')
+    ax2.set_title('Pareto Front: Knot Costs and Coverage Ratio with annotated Thrust Limits')
+    ax2.set_xlabel('Knot Cost (m)')
+    ax2.set_ylabel('Coverage (%)')
+    if thrust_values is not None: annotate_thrust(ax2, knot_costs, coverage, thrust_values)
 
+    # # fuel_costs against path_costs
+    # ax1.plot(fuel_costs, path_costs, 'rx')
+    # ax1.set_title('Pareto Front: Fuel and Path Costs \n with annotated Thrust Limits')
+    # ax1.set_xlabel('Fuel Cost (g)')
+    # ax1.set_ylabel('Path Length (m)')
+    # annotate_thrust(ax1, fuel_costs, path_costs, thrust_values)
+
+    # # knot_costs against path_costs
+    # ax2.plot(knot_costs, path_costs, 'rx')
+    # ax2.set_title('Pareto Front: Knot Point and Path Costs \n with annotated Thrust Limits')
+    # ax2.set_xlabel('Knot Point Cost (m)')
+    # ax2.set_ylabel('Path Length (m)')
+    # annotate_thrust(ax2, knot_costs, path_costs, thrust_values)
+
+    fig.set_figwidth(15)
+    fig.set_figheight(10)
     plt.tight_layout()
     if save_file is not None: fig.savefig(save_file, dpi=300)
     plt.show()
@@ -88,6 +116,49 @@ def annotate_thrust(ax, x, y, thrust_values):
     """
     for i, tv in enumerate(thrust_values):
         ax.text(x[i], y[i], str(tv) + ' N')
+
+def generate_pareto_front_grid(knotfile=join(getcwd(), 'ccp_paths', '1.5m43.662200005359864.csv'), 
+                               solution_dir=join(getcwd(), 'ocp_paths', 'pareto_front_solutions'), 
+                               knot_range=(0.1, 100, 11),
+                               fuel_range=(0.1, 100, 11),
+                               ):
+    """
+    generate the pareto front for set of solutions
+    """
+    plot_file_save=join(getcwd(), 'pareto_front', basename(normpath(solution_dir)))
+    fuel_costs = []
+    knot_costs = []
+    path_costs = []
+    coverage = []
+    k_weights = np.logspace(np.log10(knot_range[0]), np.log10(knot_range[1]), knot_range[2])
+    f_weights = np.logspace(np.log10(fuel_range[0]), np.log10(fuel_range[1]), fuel_range[2])
+    for kw in tqdm(k_weights, position=0):
+        for fw in tqdm(f_weights, leave=False, position=1):
+            file_path = join(solution_dir, 'k_' + num2str(kw) + '_f_' + num2str(fw) + '_X.csv')
+            if exists(file_path):
+                X, U, t = load_solution(file_dir=solution_dir, kf_weights=(num2str(kw), num2str(fw)))
+                fuel_cost, knot_cost, path_cost, coverage_ratio = compute_objective_costs(X, U, t, knotfile)
+                fuel_costs.append(fuel_cost)
+                knot_costs.append(knot_cost)
+                path_costs.append(path_cost)
+                coverage.append(coverage_ratio)
+                # print(file_path, ' fuel_cost=', fuel_cost)
+            # else: print('File not loaded: ', file_path)
+
+    fuel_costs = np.array(fuel_costs)
+    knot_costs = np.array(knot_costs)
+    path_costs = np.array(path_costs)
+    coverage = np.array(coverage)
+    
+    np.savetxt(join(plot_file_save, '_fcost', fuel_costs))
+    np.savetxt(join(plot_file_save, '_kcost', knot_costs))
+    np.savetxt(join(plot_file_save, '_pcost', path_costs))
+    np.savetxt(join(plot_file_save, '_cov', coverage))
+
+    if not exists(plot_file_save): mkdir(plot_file_save)
+    plot_pareto_front(fuel_costs, knot_costs, path_costs, coverage,
+                      save_file=join(plot_file_save, 'all_points'))
+    return
 
 def generate_pareto_front(knotfile=join(getcwd(), 'ccp_paths', '1.5m43.662200005359864.csv'),
                           solution_dir=join(getcwd(), 'ocp_paths', 'thrust_test_k_1_p_1_f_1'),
@@ -101,45 +172,52 @@ def generate_pareto_front(knotfile=join(getcwd(), 'ccp_paths', '1.5m43.662200005
     fuel_costs = []
     knot_costs = []
     path_costs = []
+    coverage = []
     # thrust_iter = ['0_20', '0_40', '0_60', '0_80', '1_00']
     # thrust_values = [0.2, 0.4, 0.6, 0.8, 1.0]
     thrust_values = [x/10 for x in range(int(start_thrust*10),int(end_thrust*10)+1)]
     thrust_iter = [str(x)[0] + '_' + str(round((x%1)*10))[0] + str(round(((x*10)%1)*10))[0] for x in thrust_values] # '0_20' through '1_00'
-    for thrust_str_value in thrust_iter:
+    for thrust_str_value in tqdm(thrust_iter):
         X, U, t = load_solution(file_dir=solution_dir, thrust_str=thrust_str_value)
-        fuel_cost, knot_cost, path_cost = compute_objective_costs(X, U, knotfile)
+        fuel_cost, knot_cost, path_cost, coverage_ratio = compute_objective_costs(X, U, t, knotfile)
         fuel_costs.append(fuel_cost)
         knot_costs.append(knot_cost)
         path_costs.append(path_cost)
+        coverage.append(coverage_ratio)
 
     fuel_costs = np.array(fuel_costs)
     knot_costs = np.array(knot_costs)
     path_costs = np.array(path_costs)
+    coverage = np.array(coverage)
 
     if not exists(plot_file_save): mkdir(plot_file_save)
-    plot_pareto_front(fuel_costs, knot_costs, path_costs, thrust_values,
+    plot_pareto_front(fuel_costs, knot_costs, path_costs, coverage, thrust_values,
                       save_file=join(plot_file_save, 'pareto_front_' + thrust_iter[0] + '_to_' + thrust_iter[-1]))
     return
 
 if __name__ == '__main__':
     # python pareto_front.py 1 1 1 0.2 1.5
 
-    if len(argv) > 1: k_weight = argv[1] # string
-    else: k_weight = '1'
-    if len(argv) > 2: p_weight = argv[2] # string
-    else: p_weight = '1'
-    if len(argv) > 3: f_weight = argv[3] # string
-    else: f_weight = '1'
-    if len(argv) > 4: start_thrust_input = float(argv[4])
-    else: start_thrust_input=0.2
-    if len(argv) > 5: end_thrust_input = float(argv[5])
-    else: end_thrust_input=1.0
+    if argv[1] == '-grid':
+        solution_directory = join(getcwd(), 'ocp_paths', 'pareto_front_solutions')
+        generate_pareto_front_grid(solution_dir=solution_directory)
+    else:
+        if len(argv) > 1: k_weight = argv[1] # string
+        else: k_weight = '1'
+        if len(argv) > 2: p_weight = argv[2] # string
+        else: p_weight = '1'
+        if len(argv) > 3: f_weight = argv[3] # string
+        else: f_weight = '1'
+        if len(argv) > 4: start_thrust_input = float(argv[4])
+        else: start_thrust_input=0.2
+        if len(argv) > 5: end_thrust_input = float(argv[5])
+        else: end_thrust_input=1.0
 
-    solution_directory = join(getcwd(),
-                              'ocp_paths',
-                              'thrust_test_k_' + k_weight + '_p_' + p_weight + '_f_' + f_weight
-                              )
+        solution_directory = join(getcwd(),
+                                'ocp_paths',
+                                'thrust_test_k_' + k_weight + '_p_' + p_weight + '_f_' + f_weight
+                                )
 
-    generate_pareto_front(solution_dir=solution_directory,
-                          start_thrust=start_thrust_input,
-                          end_thrust=end_thrust_input)
+        generate_pareto_front(solution_dir=solution_directory,
+                            start_thrust=start_thrust_input,
+                            end_thrust=end_thrust_input)

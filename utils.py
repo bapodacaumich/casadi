@@ -1,12 +1,113 @@
 from numpy import linspace, mgrid, pi, sin, cos, mean, isnan, diff, sum, floor, cumsum, array, insert, append, loadtxt
+import numpy as np
 from numpy.linalg import norm
 from numpy.matlib import repmat
 from matplotlib import pyplot as plt
 from mpl_toolkits import mplot3d
 from stl import mesh
 from casadi import dot, fmax
-from os import getcwd
+from camera import Camera
+from os import getcwd, listdir
 from os.path import join
+from tqdm import tqdm
+
+def load_path_data(sol_dir=join(getcwd(), 'ocp_paths', 'thrust_test_k_100_p_0_1_f_1'),
+                   knot_file=join(getcwd(), 'ccp_paths', '1.5m43.662200005359864.csv')):
+    """
+    load file states and time vector along with knotpoints
+    """
+    path = np.loadtxt(knot_file, delimiter=',') # (N, 6)
+    knots = filter_path_na(path) # get rid of configurations with nans
+    x = np.loadtxt(join(sol_dir, '1.5m_X_1_70.csv'))
+    t = np.loadtxt(join(sol_dir, '1.5m_t_1_70.csv'))
+    return knots, x, t
+
+def process_data(knots, x, t):
+    """process data for packaging
+
+    Args:
+        knots (np.array): knot points
+        x (np.array): ocp state vector
+        t (np.array): time vector
+    """
+    velocity = 0.2
+    n_timesteps = 400
+    dt, knot_idx = compute_time_intervals(knots, velocity, n_timesteps)
+
+    t_load = np.insert(np.cumsum(dt),0,0)
+    assert (t_load == t).all()
+    t = t.reshape((-1,1))
+
+    x[:,3:] = 0
+    x[0, 3:] = knots[0, 3:]
+    for i in range(len(knot_idx)-1):
+        prev_knot = knots[i]
+        cur_knot = knots[i+1]
+
+        prev_idx = knot_idx[i]
+        cur_idx = knot_idx[i+1]
+        n_interval = knot_idx[i+1] - knot_idx[i] + 1 # inclusive
+
+        orientations = np.linspace(prev_knot[3:], cur_knot[3:], n_interval) # linearly interpolate orientation (last three)
+        orientations = orientations / np.linalg.norm(orientations, axis=1).reshape((-1,1))
+
+        x[prev_idx+1:cur_idx+1, 3:] = orientations[1:,:]
+
+    return np.concatenate((x,t), axis=1)
+
+
+def compute_path_coverage(knots, x, t,
+                        #   soln_dir=join(getcwd(), 'ocp_paths', 'thrust_test_k_100_p_0_1_f_1'),
+                        #   knot_file=join(getcwd(), 'ccp_paths', '1.5m43.662200005359864.csv'),
+                          meshdir='remeshed'):
+    """compute coverage of path X over meshfiles
+
+    Args:
+        X (np.ndarray): path vector [x, y, z, xl, yl, zl] - first three are position, second three are look direction (xl, yl, zl) = unit look direction vector
+        meshfile (list): list of meshfile locations
+    """
+    # load path stuff
+    # knots, x, t = load_path_data(soln_dir, knot_file)
+    X = process_data(knots, x, t)
+
+    # load meshes
+    meshes = []
+    face_counts = []
+    meshdir = join(getcwd(), 'model', meshdir)
+    for file in listdir(meshdir):
+        cur_mesh = mesh.Mesh.from_file(join(meshdir, file))
+        face_counts.append(len(cur_mesh.normals))
+        meshes.append(cur_mesh)
+
+    # setup camera
+    cam = Camera(fov=(pi/4, pi/4), d=5)
+
+    # iterate through poses and determine coverage for every mesh face
+    coverage_count = 0
+    for face_count, cur_mesh in tqdm(zip(face_counts, meshes), total=len(face_counts), position=2, leave=False):
+    # for face_count, cur_mesh in zip(face_counts, meshes):
+        cur_coverage_map = np.zeros(face_count)
+
+        for pose_idx in range(X.shape[0]):
+            pose = np.zeros(5)
+            pose[:3] = X[pose_idx,:3]
+            pose[3] = np.arctan2(X[pose_idx,4], X[pose_idx,3])
+            pose[4] = np.arctan2(np.sqrt(X[pose_idx,3]**2 + X[pose_idx,4]**2), -X[pose_idx,5])
+
+            for i in range(face_count):
+                normal = cur_mesh.normals[i]
+                if (cam.coverage(pose, cur_mesh.v0[i], normal)):
+                    cur_coverage_map[i] = 1
+                # if (cam.coverage(pose, cur_mesh.v0[i], normal) and
+                #     cam.coverage(pose, cur_mesh.v1[i], normal) and 
+                #     cam.coverage(pose, cur_mesh.v2[i], normal)):
+                #     cur_coverage_map[i] = 1
+
+        coverage_count += np.sum(cur_coverage_map)
+
+    coverage_ratio = coverage_count/np.sum(np.array(face_counts))
+
+    return coverage_ratio
 
 def num2str(num):
     """ parse num into hundredth palce string 123.45678900000 --> 123_45. works for numbers under 1000
@@ -18,7 +119,10 @@ def num2str(num):
     if num >= 100:
         string += str(num/100)[0]
         num = num % 100
-    if num >= 10: 
+        if num >= 10: string += str(num/10)[0]
+        else: string += '0'
+        num = num % 10
+    if num >= 10:
         string += str(num/10)[0]
         num = num % 10
     string += str(num)[0] + '_'
