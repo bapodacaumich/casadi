@@ -25,10 +25,6 @@ def generate_pareto_grid(knot_range=(0.1, 100, 11),
     for kw in knot_weights:
         for fw in fuel_weights:
             # parse kw and fw into a filename string
-            # if str(kw)[-1] == '0': k_str = str(kw)[:-2]
-            # else: k_str = str(kw)[:-2] + '_' + str(kw)[-1]
-            # if str(fw)[-1] == '0': f_str = str(fw)[:-2]
-            # else: f_str = str(fw)[:-2] + '_' + str(fw)[-1]
             k_str = num2str(kw)
             f_str = num2str(fw)
             filestr = 'k_' + k_str + '_f_' + f_str
@@ -44,4 +40,6 @@ def generate_pareto_grid(knot_range=(0.1, 100, 11),
 if __name__ == "__main__":
     if len(argv) > 1: thrust_limit_input = float(argv[1])
     else: thrust_limit_input = 0.2
-    generate_pareto_grid(thrust_limit=thrust_limit_input)
+    if len(argv) > 2: soln_folder = argv[2]
+    else: soln_folder = 'pareto_front_solutions'
+    generate_pareto_grid(thrust_limit=thrust_limit_input, save_dir=join(getcwd(), 'ocp_paths', soln_folder))
