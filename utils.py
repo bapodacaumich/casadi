@@ -22,6 +22,23 @@ def load_path_data(sol_dir=join(getcwd(), 'ocp_paths', 'thrust_test_k_100_p_0_1_
     t = np.loadtxt(join(sol_dir, '1.5m_t_1_70.csv'))
     return knots, x, t
 
+def get_knot_idx(knots, x):
+    """get the knot idx that correspond to x states
+
+    Args:
+        knots (_type_): (num_knots, 6) [x y z xdir ydir zdir]
+        x (_type_): (N, 6) [x y z xdot ydot zdot]
+    """
+    num_knots = knots.shape[0]
+    num_states = x.shape[0]
+    knot_idx = [0]
+    for i in range(1, num_knots-1):
+        knot_closeness = np.sum((x[:,:3] - knots[i, :3])**2, axis=1)
+        closest_knot_idx = np.argmin(knot_closeness)
+        knot_idx.append(closest_knot_idx)
+    knot_idx.append(num_states-1)
+    return knot_idx
+
 def process_data(knots, x, t):
     """process data for packaging
 
@@ -30,13 +47,28 @@ def process_data(knots, x, t):
         x (np.array): ocp state vector
         t (np.array): time vector
     """
-    velocity = 0.2
-    n_timesteps = 400
-    dt, knot_idx = compute_time_intervals(knots, velocity, n_timesteps)
+    # velocity = 0.2
+    # n_timesteps = 400
+    # dt, knot_idx = compute_time_intervals(knots, velocity, n_timesteps)
+    # print(knot_idx)
 
-    t_load = np.insert(np.cumsum(dt),0,0)
-    assert (t_load == t).all()
+    # t_load = np.insert(np.cumsum(dt),0,0)
+    # print(t_load.shape)
+    # assert (t_load == t).all()
     t = t.reshape((-1,1))
+    knot_idx = np.array(get_knot_idx(knots, x))
+
+    norepeats = True
+    while norepeats:
+        knot_sort_idx = np.argsort(knot_idx)
+        knots = knots[knot_sort_idx,:]
+        knot_idx = knot_idx[knot_sort_idx]
+
+        norepeats = False
+        for i in range(len(knot_idx)-1):
+            if knot_idx[i] == knot_idx[i+1]:
+                norepeats = True
+                knot_idx[i+1] += 1
 
     x[:,3:] = 0
     x[0, 3:] = knots[0, 3:]
