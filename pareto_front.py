@@ -281,6 +281,7 @@ def generate_pareto_front(knotfile=join(getcwd(), 'ccp_paths', '1.5m43.662200005
 
 if __name__ == '__main__':
     # python pareto_front.py 1 1 1 0.2 1.5
+    # python pareto_front.py -grid pf_0.2
 
     if argv[1] == '-grid':
         if len(argv) > 2: save_dir=argv[2]
