@@ -1,5 +1,6 @@
-from casadi import dot, fmax, sumsqr, sum1, sum2, sqrt
+from casadi import dot, fmax, sumsqr, sum1, sum2, sqrt, fmin
 from numpy.linalg import norm
+from numpy import Inf
 
 def enforce_convex_hull(normals, points, opti, X, min_station_distance):
     """
@@ -65,7 +66,7 @@ def integrate_runge_kutta(X, U, dt, f, opti):
 
     return
 
-def compute_knot_cost(X, knots, knot_idx):
+def compute_knot_cost(X, knots, knot_idx, closest=False):
     """
     compute distance between knot points and path X (enforces position - first three states, but not velocity)
 
@@ -82,7 +83,16 @@ def compute_knot_cost(X, knots, knot_idx):
     # for i, k in enumerate(knot_idx):
         # knot_cost += sumsqr(X[k,:3].T - knots[i,:3])
 
-    knot_cost = sumsqr(X[knot_idx, :3] - knots[:, :3])
+    if closest:
+        lastidx = 0
+        knot_cost = 0
+        for ki in range(len(knot_idx)-1):
+            closest_dist = Inf
+            for idx in range(lastidx, (knot_idx[ki] + knot_idx[ki+1])//2+1):
+                dist = (knots[ki, :3] - X[idx, :3])**2 # compare state
+                closest_dist = fmin(closest_dist, dist)
+            knot_cost += closest_dist
+    else: knot_cost = sumsqr(X[knot_idx, :3] - knots[:, :3])
 
     return knot_cost
 

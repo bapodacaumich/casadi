@@ -35,11 +35,18 @@ def generate_pareto_grid(knot_range=(0.1, 100, 11),
                              thrust_limit=thrust_limit, 
                              k_weight=kw, 
                              p_weight=0.1, 
-                             f_weight=fw)
+                             f_weight=fw,
+                             closest_knot=True
+                             )
 
 if __name__ == "__main__":
     if len(argv) > 1: thrust_limit_input = float(argv[1])
-    else: thrust_limit_input = 0.2
+    else: thrust_limit_input = 0.5
     if len(argv) > 2: soln_folder = argv[2]
     else: soln_folder = 'pareto_front_solutions'
-    generate_pareto_grid(thrust_limit=thrust_limit_input, save_dir=join(getcwd(), 'ocp_paths', soln_folder))
+    if len(argv) > 5: knot_range_input = (float(argv[3]), float(argv[4]), int(argv[5]))
+    else: knot_range_input = (0.1, 100, 11)
+    if len(argv) > 8: fuel_range_input = (float(argv[6]), float(argv[7]), int(argv[8]))
+    else: fuel_range_input = (0.1, 100, 11)
+    generate_pareto_grid(knot_range=knot_range_input, fuel_range=fuel_range_input,
+                         thrust_limit=thrust_limit_input, save_dir=join(getcwd(), 'ocp_paths', soln_folder))

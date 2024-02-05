@@ -21,7 +21,8 @@ def ocp_station_knot(meshdir=join(getcwd(), 'model', 'convex_detailed_station'),
                      min_station_distance=1.0,
                      k_weight=1,
                      p_weight=1,
-                     f_weight=1
+                     f_weight=1,
+                     closest_knot=False
                      ):
     """
     ocp_station with knot points
@@ -43,7 +44,7 @@ def ocp_station_knot(meshdir=join(getcwd(), 'model', 'convex_detailed_station'),
     dt, knot_idx = compute_time_intervals(knots, velocity, n_timesteps)
     print('Path Duration: ', np.sum(dt), flush=True)
     n_timesteps = len(dt)
-    goal_config_weight = 1
+    # goal_config_weight = 1
     knot_cost_weight = k_weight
     path_cost_weight = p_weight
     fuel_cost_weight = f_weight
