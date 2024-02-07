@@ -9,13 +9,12 @@ from constraints import *
 import numpy as np
 
 def ocp_station_knot(meshdir=join(getcwd(), 'model', 'convex_detailed_station'),
-                     # knotfile=join(getcwd(), 'ccp_paths', '1.5m43.662200005359864.csv'),
+                    #  knotfile=join(getcwd(), 'ccp_paths', '1.5m43.662200005359864.csv'),
                      # save_dir='thrust_test_k_1_p_1_f_1',
                      save_folder=join(getcwd(), 'ocp_paths', 'final'),
                      save_path=None,
                      view_distance='1.5m',
                      local=False,
-                     # save_file='1.5m',
                      show=False,
                      thrust_limit=0.2,
                      min_station_distance=1.0,
@@ -24,8 +23,21 @@ def ocp_station_knot(meshdir=join(getcwd(), 'model', 'convex_detailed_station'),
                      f_weight=1,
                      closest_knot=False
                      ):
-    """
-    ocp_station with knot points
+    """casadi ocp program for space station proximity operations with enforced knotpoints
+
+    Args:
+        meshdir (path, optional): directory to find mesh pieces. Defaults to join(getcwd(), 'model', 'convex_detailed_station').
+        save_folder (path, optional): directory to save paths. Defaults to join(getcwd(), 'ocp_paths', 'final').
+        save_path (path, optional): save file name. Defaults to None.
+        view_distance (str, optional): view distance to retrieve knot points from. Defaults to '1.5m'.
+        local (bool, optional): using locally generated viewpoints. Defaults to False.
+        show (bool, optional): True to show final solution. Defaults to False.
+        thrust_limit (float, optional): thrust limit (Newtons) to impose on actions. Defaults to 0.2.
+        min_station_distance (float, optional): constrain keepout distance for convex station hull. Defaults to 1.0.
+        k_weight (int, optional): knot weight in cost function. Defaults to 1.
+        p_weight (int, optional): path length weight in cost function. Defaults to 1.
+        f_weight (int, optional): fuel cost weight in cost function. Defaults to 1.
+        closest_knot (bool, optional): If true, match knot point to closest in range of knot points. Defaults to False.
     """
     print('Importing Initial Conditions...', flush=True)
 
@@ -78,7 +90,7 @@ def ocp_station_knot(meshdir=join(getcwd(), 'model', 'convex_detailed_station'),
     fuel_cost = compute_fuel_cost(U, dt)
 
     ## knot cost function
-    knot_cost = compute_knot_cost(X, knots, knot_idx)
+    knot_cost = compute_knot_cost(X, knots, knot_idx, closest=closest_knot)
 
     ## Path length cost
     path_cost = compute_path_cost(X)

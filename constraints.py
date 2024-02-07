@@ -89,7 +89,7 @@ def compute_knot_cost(X, knots, knot_idx, closest=False):
         for ki in range(len(knot_idx)-1):
             closest_dist = Inf
             for idx in range(lastidx, (knot_idx[ki] + knot_idx[ki+1])//2+1):
-                dist = (knots[ki, :3] - X[idx, :3])**2 # compare state
+                dist = sumsqr(knots[ki, :3].reshape((1,-1)) - X[idx, :3]) # compare state
                 closest_dist = fmin(closest_dist, dist)
             knot_cost += closest_dist
     else: knot_cost = sumsqr(X[knot_idx, :3] - knots[:, :3])

@@ -1,5 +1,6 @@
 import numpy as np
 import matplotlib.pyplot as plt
+from numpy.linalg import norm
 from os.path import join, normpath, basename, exists
 from os import getcwd, mkdir
 from utils import filter_path_na, compute_time_intervals, compute_path_coverage, num2str
@@ -32,12 +33,14 @@ def load_solution(file_dir=join(getcwd(), 'ocp_paths', 'thrust_test'),
 def compute_objective_costs(X,
                             U,
                             t,
-                            knotfile=join(getcwd(), 'ccp_paths', '1.5m43.662200005359864.csv')
+                            knotfile=join(getcwd(), 'ccp_paths', '1.5m43.662200005359864.csv'),
+                            compute_coverage=True
                             ):
     """
     compute objective costs for pareto function from state and actions
     X - state vector (N+1, 6) [x, y, z, xdot, ydot, zdot]
     U - action vector (N, 3) [Fx, Fy, Fz]
+    t - time vector (N+1, 1)
     """
 
     # knot cost
@@ -54,11 +57,28 @@ def compute_objective_costs(X,
     path_cost = np.sum(np.sqrt(np.sum((X[1:,:] - X[:-1,:])**2, axis=1)))
 
     # fuel cost
-    g0 = 9.81
-    Isp = 80
-    fuel_cost = np.sum(np.sqrt(U**2)/g0/Isp)*1000 # convert kg to grams
+    g0 = 9.81 # acceleration due to gravity
+    Isp = 80 # specific impulse of rocket engine
+    m = 5.75 # mass of agent
+    dt = np.diff(t)
+    fuel_cost = np.sum((np.sqrt(np.sum(U**2, axis=1))/g0/Isp)*dt) * 1000 # convert kg to grams
+    # N = X.shape[0]
+    # fuel_cost = 0
+    # for i in range(N-2):
+    #     # get velocity vectors
+    #     v1 = X[i+1,:3] - X[i,:3]
+    #     v1 = v1/norm(v1) * velocity
+    #     v2 = X[i+2,:3] - X[i+1,:3]
+    #     v2 = v2/norm(v2) * velocity
 
-    coverage = compute_path_coverage(knots, X, t)
+    #     # delta-v needed
+    #     dv = norm(v2-v1)
+
+    #     # compute fuel use per delta v
+    #     fuel_cost += (np.exp(dv/Isp/g0)-1)*m
+
+    if compute_coverage: coverage = compute_path_coverage(knots, X, t)
+    else: coverage=None
 
     path_time = t[-1]
 
@@ -157,13 +177,15 @@ def annotate_thrust(ax, x, y, thrust_values):
 
 def generate_pareto_front_grid(knotfile=join(getcwd(), 'ccp_paths', '1.5m43.662200005359864.csv'), 
                                solution_dir=join(getcwd(), 'ocp_paths', 'pf_0.2'), 
-                               knot_range=(0.1, 100, 11),
-                               fuel_range=(0.1, 100, 11),
+                               knot_range=(0.1, 100, 10),
+                               fuel_range=(0.1, 100, 10),
+                               coverage_input=True
                                ):
     """
     generate the pareto front for set of solutions
     """
     plot_file_save=join(getcwd(), 'pareto_front', basename(normpath(solution_dir)))
+    # plot_file_save=join(getcwd(), 'pareto_front', 'pf_1.0_temp')
     if not exists(plot_file_save): mkdir(plot_file_save)
     fuel_costs = []
     knot_costs = []
@@ -173,13 +195,16 @@ def generate_pareto_front_grid(knotfile=join(getcwd(), 'ccp_paths', '1.5m43.6622
     k_weights = np.logspace(np.log10(knot_range[0]), np.log10(knot_range[1]), knot_range[2])
     f_weights = np.logspace(np.log10(fuel_range[0]), np.log10(fuel_range[1]), fuel_range[2])
     weight_combs = []
-    for kw in tqdm(k_weights, position=0):
-        for fw in tqdm(f_weights, leave=False, position=1):
+    # for kw in tqdm(k_weights, position=0):
+    #     for fw in tqdm(f_weights, leave=False, position=1):
+    for kw in k_weights:
+        for fw in f_weights:
             file_path = join(solution_dir, 'k_' + num2str(kw) + '_f_' + num2str(fw) + '_X.csv')
             if exists(file_path):
                 weight_combs.append((kw, fw))
                 X, U, t = load_solution(file_dir=solution_dir, kf_weights=(num2str(kw), num2str(fw)))
-                fuel_cost, knot_cost, path_cost, coverage_ratio, path_time = compute_objective_costs(X, U, t, knotfile)
+                fuel_cost, knot_cost, path_cost, coverage_ratio, path_time = compute_objective_costs(X, U, t, knotfile, compute_coverage=coverage_input)
+                # print('\n\nWeight combination (knot, fuel): ', kw, fw, ' Fuel cost: ', fuel_cost, ' Knot Cost: ', knot_cost, ' Coverage: ', coverage_ratio)
                 fuel_costs.append(fuel_cost)
                 knot_costs.append(knot_cost)
                 path_costs.append(path_cost)
@@ -190,13 +215,13 @@ def generate_pareto_front_grid(knotfile=join(getcwd(), 'ccp_paths', '1.5m43.6622
     fuel_costs = np.array(fuel_costs)
     knot_costs = np.array(knot_costs)
     path_costs = np.array(path_costs)
-    coverage = np.array(coverage)
+    if coverage[0] is not None: coverage = np.array(coverage)
     path_times = np.array(path_times)
     
     np.savetxt(join(plot_file_save, 'fcost.csv'), fuel_costs)
     np.savetxt(join(plot_file_save, 'kcost.csv'), knot_costs)
     np.savetxt(join(plot_file_save, 'pcost.csv'), path_costs)
-    np.savetxt(join(plot_file_save, 'cov.csv'), coverage)
+    if coverage[0] is not None: np.savetxt(join(plot_file_save, 'cov.csv'), coverage)
     np.savetxt(join(plot_file_save, 'ptime.csv'), path_times)
 
     if not exists(plot_file_save): mkdir(plot_file_save)
@@ -228,6 +253,10 @@ def pareto_load_plot(cost_dir=join(getcwd(), 'pareto_front','pf_0.2'),
     knot_costs = np.loadtxt(join(plot_file_save, 'kcost.csv'))
     path_costs = np.loadtxt(join(plot_file_save, 'pcost.csv'))
     coverage = np.loadtxt(join(plot_file_save, 'cov.csv'))
+    print(fuel_costs.shape)
+    print(knot_costs.shape)
+    print(path_costs.shape)
+    print(coverage.shape)
     # path_times = np.loadtxt(join(plot_file_save, 'ptime.csv'))
     
     fk_idx, fc_idx, kc_idx = plot_pareto_front(fuel_costs, knot_costs, path_costs, coverage, save_file=join(cost_dir, 'plot_with_front.png'))
@@ -286,11 +315,13 @@ if __name__ == '__main__':
     if argv[1] == '-grid':
         if len(argv) > 2: save_dir=argv[2]
         else: save_dir='pf_0.2'
+        if len(argv) > 3: compute_coverage=bool(argv[3])
         solution_directory = join(getcwd(), 'ocp_paths', save_dir)
-        generate_pareto_front_grid(solution_dir=solution_directory)
+        generate_pareto_front_grid(solution_dir=solution_directory, coverage_input=compute_coverage)
     elif argv[1] == '-load':
         if len(argv) > 2: save_dir=argv[2]
         else: save_dir='pf_0.2'
+        # solution_directory = join(getcwd(), 'ocp_paths', 'pf_1.0')
         solution_directory = join(getcwd(), 'ocp_paths', save_dir)
         cost_directory = join(getcwd(), 'pareto_front', save_dir)
         pareto_load_plot(cost_dir=cost_directory,
