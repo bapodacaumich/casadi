@@ -144,16 +144,19 @@ def ocp_station_knot(meshdir=join(getcwd(), 'model', 'convex_detailed_station'),
         for i in range(15):
             meshfiles.append(join(meshdir, str(i) + '.stl'))
         # meshfile = join(filename, 'mercury_convex.stl')
+
+        ### No longer accurate:
         ## knot cost function
-        knot_cost = 0
-        for i, k in enumerate(knot_idx):
-            knot_cost += sumsqr(x_opt[k,:3].T - knots[i,:3])
-        fuel_cost = np.sum(u_opt**2)/g0/Isp
-        path_cost = np.sum((x_opt[1:,:] - x_opt[:-1,:])**2)
-        print('Knot Cost = ', knot_cost, flush=True)
-        print('Fuel Cost = ', fuel_cost, flush=True)
-        print('Path Cost = ', path_cost, flush=True)
-        print('Plotting Solution')
+        # knot_cost = 0
+        # for i, k in enumerate(knot_idx):
+        #     knot_cost += sumsqr(x_opt[k,:3].T - knots[i,:3])
+        # fuel_cost = np.sum(u_opt**2)/g0/Isp
+        # path_cost = np.sum((x_opt[1:,:] - x_opt[:-1,:])**2)
+        # print('Knot Cost = ', knot_cost, flush=True)
+        # print('Fuel Cost = ', fuel_cost, flush=True)
+        # print('Path Cost = ', path_cost, flush=True)
+        # print('Plotting Solution')
+
         plot_solution3_convex_hull(x_opt, u_opt, meshfiles, dt, save_fig_file=join('path_figures', 'ocp'), station=True)
 
 

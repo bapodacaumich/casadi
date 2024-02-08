@@ -11,7 +11,7 @@ def run_extremes(knot_range=(0.001, 100),
                  save_dir=join(getcwd(), 'ocp_paths', 'pareto_extremes'),
                  view_distance_str='1.5m'
                  ):
-    """run the extremes of 
+    """run the extremes of the pareto front in order to determine normalization factors for cost function terms.
 
     Args:
         knot_range (tuple, optional): _description_. Defaults to (0.001, 100).
@@ -26,25 +26,22 @@ def run_extremes(knot_range=(0.001, 100),
     knot_weights = np.array([knot_range[0], knot_range[1], knot_range[0], knot_range[1]])
     fuel_weights = np.array([fuel_range[0], fuel_range[1], fuel_range[1], fuel_range[0]])
 
-    for kw in knot_weights:
-        for fw in fuel_weights:
-            k_str = num2str(kw)
-            f_str = num2str(fw)
+    for kw, fw in zip(knot_weights, fuel_weights):
+        k_str = num2str(kw)
+        f_str = num2str(fw)
 
-            filestr = 'k_' + k_str + '_f_' + f_str
-            print('Save path: ', join(save_dir, filestr + '_X'))
+        filestr = 'k_' + k_str + '_f_' + f_str
+        print('Save path: ', join(save_dir, filestr + '_X'))
 
-            ocp_station_knot(save_folder=save_dir, 
-                             save_path=filestr,
-                             thrust_limit=thrust_limit, 
-                             k_weight=kw, 
-                             p_weight=0.1, 
-                             f_weight=fw,
-                             closest_knot=True,
-                             view_distance=view_distance_str
-                             )
-
-
+        ocp_station_knot(save_folder=save_dir, 
+                            save_path=filestr,
+                            thrust_limit=thrust_limit, 
+                            k_weight=kw, 
+                            p_weight=0.1, 
+                            f_weight=fw,
+                            closest_knot=True,
+                            view_distance=view_distance_str
+                            )
 
 if __name__ == "__main__":
     if len(argv) > 1: thrust_limit_input = float(argv[1])

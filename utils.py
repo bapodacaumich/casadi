@@ -142,7 +142,7 @@ def compute_path_coverage(knots, x, t,
     return coverage_ratio
 
 def num2str(num):
-    """ parse num into hundredth palce string 123.45678900000 --> 123_45. works for numbers under 1000
+    """ parse num into hundredth palce string 123.45678900000 --> 123_45. works for numbers under 1000 and equal to or above 0.01
 
     Args:
         num (float): float to parse into string
@@ -159,7 +159,7 @@ def num2str(num):
         num = num % 10
     string += str(num)[0] + '_'
     num = num % 1
-    string += str(num)[2:4]
+    string += str(num)[2:5]
     return string
 
 def linear_initial_path(knots, knot_idx, dt):

@@ -11,7 +11,7 @@ def run_extremes(knot_range=(0.001, 100),
                  save_dir=join(getcwd(), 'ocp_paths', 'extremes'),
                  view_distance_str='1.5m'
                  ):
-    """run the extremes of 
+    """run the extremes of the pareto front in order to determine normalization factors for cost function terms.
 
     Args:
         knot_range (tuple, optional): _description_. Defaults to (0.001, 100).
@@ -44,7 +44,6 @@ def run_extremes(knot_range=(0.001, 100),
                              view_distance=view_distance_str
                              )
 
-
 def generate_pareto_grid(knot_range=(0.001, 100, 10), 
                          fuel_range=(0.001, 100, 10),
                          thrust_limit=0.5,
@@ -54,9 +53,11 @@ def generate_pareto_grid(knot_range=(0.001, 100, 10),
     """generate solutions for varying knot and fuel cost weight values
 
     Args:
-        knot_range (tuple, optional): knot_cost_weight limits and number of discretized values. Defaults to (0.1, 100).
-        fuel_range (tuple, optional): fuel_cost_weight limits and number of discretized values. Defaults to (0.1 100).
+        knot_range (tuple, optional): knot_cost_weight limits and number of discretized values. Defaults to (0.001, 100).
+        fuel_range (tuple, optional): fuel_cost_weight limits and number of discretized values. Defaults to (0.001 100).
         thrust_limit (float, optional): thrust limit for actions. Defaults to 0.5.
+        save_dir (path): path to save solutions
+        view_distance_str (str): string to indicate knot file correspondance
     """
     print('Knot Weight Range: ', knot_range)
     print('Fuel Weight Range: ', knot_range)
