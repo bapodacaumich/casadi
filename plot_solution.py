@@ -118,7 +118,8 @@ if __name__ == '__main__':
         plot_solution(station=True, thrust_limit=1.7, soln_file=soln_file_input, distance=argv[2][:4], local=local_input)
     elif argv[1] == '-f':
         soln_file_input = join(getcwd(), 'ocp_paths', argv[2], argv[3])
-        distance_input = argv[4]
+        if len(argv) > 4: distance_input = argv[4]
+        else: distance_input = '1.5m'
         plot_solution(station=True, thrust_limit=1.0, soln_file=soln_file_input, distance=distance_input, local=False)
     else:
         if len(argv) > 1: thrust_input = float(argv[1])
