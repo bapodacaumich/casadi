@@ -23,7 +23,7 @@ def run_extremes(knot_range=(0.001, 100),
     print('Knot Weight Extremes: ', knot_range)
     print('Fuel Weight Extremes: ', fuel_range)
 
-    knot_weights = np.array([knot_range[0], knot_range[1], knot_range[0], knot_range[1]])
+    knot_weights = np.array([knot_range[1], knot_range[1], knot_range[0], knot_range[0]])
     fuel_weights = np.array([fuel_range[0], fuel_range[1], fuel_range[1], fuel_range[0]])
 
     for kw, fw in zip(knot_weights, fuel_weights):
