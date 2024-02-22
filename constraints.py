@@ -1,6 +1,6 @@
 from casadi import dot, fmax, sumsqr, sum1, sum2, sqrt, fmin
 from numpy.linalg import norm
-from numpy import Inf
+import numpy as np
 
 def enforce_convex_hull(normals, points, opti, X, min_station_distance):
     """
@@ -66,6 +66,38 @@ def integrate_runge_kutta(X, U, dt, f, opti):
 
     return
 
+def extract_knot_idx(X, opti, knots, knot_idx):
+    """
+    extract knot_idx corresponding to closest state vector configurations from casadi symbolic MX
+
+    Inputs:
+        X (MX (n_timesteps_1, n_states)): symbolic state vector
+        opti (casadi object): optimization problem - opti stack variable
+        knots (np.ndarray(n_knots, n_states)): knot points
+        knot_idx (np.ndarray(n_knots)): list of initial knot point correspondances 
+
+    Return:
+        list of indices corresponding with the closest points along the state vector array to knot points.
+    """
+
+    # extract numpy array of current state vector values from the optistack problem
+    X_cur = np.array(opti.value(X))
+
+    # search for the state vector configurations closest to the knot points within a given range of original knot_idx's
+    start_idx = 0
+    close_knot_idx = []
+    for ki in range(len(knot_idx)-1):
+        # look for closest state vector configuration halfway behind and ahead of current state vector point
+        end_idx = (knot_idx[ki] + knot_idx[ki+1])//2+1
+
+        # use the square distance (less computation and still monotonic)
+        sq_dist = np.sum((X_cur[start_idx:end_idx,:3] - knots[[ki], :3])**2)
+        closest_idx = np.argmin(sq_dist)
+        close_knot_idx.append(closest_idx + start_idx)
+        start_idx = end_idx
+
+    return close_knot_idx
+
 def compute_knot_cost(X, knots, knot_idx, closest=False):
     """
     compute distance between knot points and path X (enforces position - first three states, but not velocity)
@@ -87,7 +119,7 @@ def compute_knot_cost(X, knots, knot_idx, closest=False):
         lastidx = 0
         knot_cost = 0
         for ki in range(len(knot_idx)-1):
-            closest_dist = Inf
+            closest_dist = np.Inf
             for idx in range(lastidx, (knot_idx[ki] + knot_idx[ki+1])//2+1):
                 dist = sumsqr(knots[ki, :3].reshape((1,-1)) - X[idx, :3]) # compare state
                 closest_dist = fmin(closest_dist, dist)
