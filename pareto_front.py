@@ -30,52 +30,115 @@ def load_solution(file_dir=join(getcwd(), 'ocp_paths', 'thrust_test'),
 
     return X, U, t
 
+def compute_knot_cost_numpy(X,
+                            knots,
+                            n_timesteps=400,
+                            closest=True,
+                            velocity=0.2,
+                            square=False
+                            ):
+    """
+    compute the distance between knot points and path using closest knot point formulation (sum of squares)
+
+    Inputs
+    ------
+
+        X (numpy array): state vector size (N+1, 6) [x, y, z, xdot, ydot, zdot]
+
+        knots (numpy array): knot points in array size (N_knots, 3) [x, y, z]
+
+        closest (bool): if True use closest point to each knot point for distance computation, if False use old formulation
+
+        velocity (float): assumed velocity for time interval computation
+
+        square (bool): use sum of squares if true, else find actual distances
+
+    Returns
+    -------
+
+        knot_cost (float): cumulative distance between path and knot points
+
+    """
+    _, knot_idx = compute_time_intervals(knots, velocity, n_timesteps)
+    knot_cost = 0
+
+    if closest:
+        lastidx = 0
+        for ki in range(len(knot_idx)-1):
+            closest_dist = np.inf
+            for idx in range(lastidx, (knot_idx[ki] + knot_idx[ki+1])//2+1):
+                if square: dist = np.sum((knots[ki, :3].reshape((1,-1)) - X[idx, :3])**2) # compare state
+                else: dist = np.sqrt(np.sum((knots[ki, :3].reshape((1,-1)) - X[idx, :3])**2)) # compare state
+                closest_dist = min(closest_dist, dist)
+            knot_cost += closest_dist
+
+    else:
+        for i, k in enumerate(knot_idx):
+            if square: knot_cost += np.sum((X[k,:3].T - knots[i,:3])**2)
+            else: knot_cost += np.sqrt(np.sum((X[k,:3].T - knots[i,:3])**2))
+
+    return knot_cost
+
+
 def compute_objective_costs(X,
                             U,
                             t,
                             knotfile=join(getcwd(), 'ccp_paths', '1.5m43.662200005359864.csv'),
-                            compute_coverage=True
+                            compute_coverage=True,
+                            velocity = 0.2,
+                            square=False
                             ):
     """
     compute objective costs for pareto function from state and actions
-    X - state vector (N+1, 6) [x, y, z, xdot, ydot, zdot]
-    U - action vector (N, 3) [Fx, Fy, Fz]
-    t - time vector (N+1, 1)
+
+    Inputs
+    ------
+
+        X (numpy array): state vector (N+1, 6) [x, y, z, xdot, ydot, zdot]
+
+        U (numpy array): action vector (N, 3) [Fx, Fy, Fz]
+
+        t (numpy array): time vector (N+1, 1)
+
+        knotfile (String): filepath of knot file including cwd
+
+        compute_coverage (bool): flag to compute coverage ratio
+
+        velocity (float): assumed speed of inspector along path (for computing knot_idx)
+
+        square (bool): if square, use sum of squares (like objective cost fn)
+
+    Return
+    ------
+
+        fuel_cost (float): fuel cost in grams
+
+        knot_cost (float): distance from knot points in meters
+
+        path_cost (float): path length (m)
+
+        coverage (float): ratio of station (convex hull) inspected by agent
+
+        path_time (float): path traversal time given input velocity
     """
 
     # knot cost
-    velocity = 0.2
-    n_timesteps = 400
     path = np.loadtxt(knotfile, delimiter=',') # load original knot file (N, 6)
     knots = filter_path_na(path) # get rid of configurations with nans
-    _, knot_idx = compute_time_intervals(knots, velocity, n_timesteps)
-    knot_cost = 0
-    for i, k in enumerate(knot_idx):
-        knot_cost += np.sum((X[k,:3].T - knots[i,:3])**2)
+
+    knot_cost = compute_knot_cost_numpy(X, knots, closest=True, square=square)
 
     # path cost (path length)
-    path_cost = np.sum(np.sqrt(np.sum((X[1:,:] - X[:-1,:])**2, axis=1)))
+    if square: path_cost = np.sum(np.sum((X[1:,:] - X[:-1,:])**2, axis=1))
+    else: path_cost = np.sum(np.sqrt(np.sum((X[1:,:] - X[:-1,:])**2, axis=1)))
 
     # fuel cost
     g0 = 9.81 # acceleration due to gravity
     Isp = 80 # specific impulse of rocket engine
     m = 5.75 # mass of agent
     dt = np.diff(t)
-    fuel_cost = np.sum((np.sqrt(np.sum(U**2, axis=1))/g0/Isp)*dt) * 1000 # convert kg to grams
-    # N = X.shape[0]
-    # fuel_cost = 0
-    # for i in range(N-2):
-    #     # get velocity vectors
-    #     v1 = X[i+1,:3] - X[i,:3]
-    #     v1 = v1/norm(v1) * velocity
-    #     v2 = X[i+2,:3] - X[i+1,:3]
-    #     v2 = v2/norm(v2) * velocity
-
-    #     # delta-v needed
-    #     dv = norm(v2-v1)
-
-    #     # compute fuel use per delta v
-    #     fuel_cost += (np.exp(dv/Isp/g0)-1)*m
+    if square: fuel_cost = np.sum((np.sum(U**2, axis=1)/g0**2/Isp**2)*dt**2)   # convert kg to grams
+    else: fuel_cost = np.sum((np.sqrt(np.sum(U**2, axis=1))/g0/Isp)*dt) * 1000 # convert kg to grams
 
     if compute_coverage: coverage = compute_path_coverage(knots, X, t)
     else: coverage=None
@@ -175,8 +238,33 @@ def annotate_thrust(ax, x, y, thrust_values):
     for i, tv in enumerate(thrust_values):
         ax.text(x[i], y[i], str(tv) + ' N')
 
-def generate_pareto_front_grid(knotfile=join(getcwd(), 'ccp_paths', '1.5m43.662200005359864.csv'), 
-                               solution_dir=join(getcwd(), 'ocp_paths', 'pf_0.2'), 
+def compute_cost_single_soln(knotfile=join(getcwd(), 'ccp_paths', '1.5m43.662200005359864.csv'),
+                             solution_dir=join(getcwd(), 'ocp_paths', 'pf_0.2'),
+                             knot_weight=1,
+                             fuel_weight=1,
+                             compute_coverage=True
+                             ):
+    # build file path for queried solution
+    kstr = num2str(knot_weight)
+    fstr = num2str(fuel_weight)
+    file_path = join(solution_dir, 'k_' + kstr + '_f_' + fstr + '_X.csv')
+
+    # if the file exists, compute the costs
+    if exists(file_path):
+        X, U, t = load_solution(file_dir=solution_dir, kf_weights=(kstr, fstr))
+        fuel_cost, knot_cost, path_cost, coverage_ratio, path_time = compute_objective_costs(X,
+                                                                                             U,
+                                                                                             t, 
+                                                                                             knotfile,
+                                                                                             compute_coverage=compute_coverage,
+                                                                                             square=True
+                                                                                             )
+
+        print('Weights and costs: Knot = ', knot_weight, '| Fuel = ', fuel_weight, ' | Fuel Cost: ', fuel_cost, ' | Knot Cost: ', knot_cost, ' Coverage (%): ', coverage_ratio*100)
+    else: print('File missing: ', file_path)
+
+def generate_pareto_front_grid(knotfile=join(getcwd(), 'ccp_paths', '1.5m43.662200005359864.csv'),
+                               solution_dir=join(getcwd(), 'ocp_paths', 'pf_0.2'),
                                knot_range=(0.1, 100, 10),
                                fuel_range=(0.1, 100, 10),
                                coverage_input=True
@@ -325,7 +413,18 @@ if __name__ == '__main__':
         solution_directory = join(getcwd(), 'ocp_paths', save_dir)
         cost_directory = join(getcwd(), 'pareto_front', save_dir)
         pareto_load_plot(cost_dir=cost_directory,
-                         solution_dir=solution_directory)
+                         solution_dir=solution_directory
+                         )
+    elif argv[1] == '-c': # -c for cost evaluation of a single solution
+        soln_dir=argv[2]
+        kw=float(argv[3])
+        fw=float(argv[4])
+        compute_cost_single_soln(knotfile=join(getcwd(), 'ccp_paths', '1.5m43.662200005359864.csv'), 
+                                 solution_dir=join(getcwd(), 'ocp_paths', soln_dir),
+                                 knot_weight=kw,
+                                 fuel_weight=fw,
+                                 compute_coverage=True
+                                 )
     else:
         if len(argv) > 1: k_weight = argv[1] # string
         else: k_weight = '1'

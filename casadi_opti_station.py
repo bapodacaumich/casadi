@@ -11,7 +11,7 @@ import numpy as np
 def ocp_station_knot(meshdir=join(getcwd(), 'model', 'convex_detailed_station'),
                     #  knotfile=join(getcwd(), 'ccp_paths', '1.5m43.662200005359864.csv'),
                      # save_dir='thrust_test_k_1_p_1_f_1',
-                     save_folder=join(getcwd(), 'ocp_paths', 'testing_closest_knot'),
+                     save_folder=join(getcwd(), 'ocp_paths', 'default'),
                      save_path=None,
                      view_distance='1.5m',
                      local=False,
@@ -21,7 +21,9 @@ def ocp_station_knot(meshdir=join(getcwd(), 'model', 'convex_detailed_station'),
                      k_weight=1,
                      p_weight=1,
                      f_weight=1,
-                     closest_knot=False
+                     closest_knot=False,
+                     knot_cost_normalization=100,
+                     fuel_cost_normalization=1e-5
                      ):
     """casadi ocp program for space station proximity operations with enforced knotpoints
 
@@ -95,7 +97,7 @@ def ocp_station_knot(meshdir=join(getcwd(), 'model', 'convex_detailed_station'),
     ## Path length cost
     path_cost = compute_path_cost(X)
 
-    cost = fuel_cost_weight * fuel_cost + knot_cost_weight * knot_cost + path_cost_weight * path_cost# + goal_config_weight * goal_cost
+    cost = fuel_cost_weight * fuel_cost / fuel_cost_normalization + knot_cost_weight * knot_cost / knot_cost_normalization + path_cost_weight * path_cost# + goal_config_weight * goal_cost
 
     # add cost to optimization problem
     opti.minimize(cost)

@@ -104,7 +104,7 @@ def compute_knot_cost(X, knots, knot_idx, closest=False):
 
     Inputs:
         X - state matrix size(n_timesteps+1, n_states)
-        knots - knot points np.ndarray(n_knots, n_states
+        knots - knot points np.ndarray(n_knots, n_states)
         knot_idx - index of X corresponding with each knot point
 
     Returns: 
@@ -121,7 +121,7 @@ def compute_knot_cost(X, knots, knot_idx, closest=False):
         for ki in range(len(knot_idx)-1):
             closest_dist = np.Inf
             for idx in range(lastidx, (knot_idx[ki] + knot_idx[ki+1])//2+1):
-                dist = sumsqr(knots[ki, :3].reshape((1,-1)) - X[idx, :3]) # compare state
+                dist = sumsqr(knots[[ki], :3] - X[[idx], :3]) # compare state, look at reshape
                 closest_dist = fmin(closest_dist, dist)
             knot_cost += closest_dist
     else: knot_cost = sumsqr(X[knot_idx, :3] - knots[:, :3])

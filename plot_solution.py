@@ -111,6 +111,7 @@ if __name__ == '__main__':
     # python plot_solution.py 0.2 1 1 1
     if argv[1] == '-h':
         print('Example Args:\npython plot_solution.py 0.2 1 1 1')
+        print('python plot_solution.py -f pareto_extremes k_1_0_f_1_0 1.5m')
     elif argv[1] == '-d':
         soln_file_input = join(getcwd(), 'ocp_paths', argv[2])
         if argv[2][-1] == 'l': local_input = True

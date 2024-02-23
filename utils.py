@@ -158,7 +158,7 @@ def num2str(num):
         string += str(num/10)[0]
         num = num % 10
     string += str(num)[0] + '_'
-    num = num % 1
+    num = np.round(num % 1, decimals=3)
     string += str(num)[2:5]
     return string
 

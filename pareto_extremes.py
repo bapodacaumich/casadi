@@ -5,8 +5,8 @@ from os import getcwd
 from sys import argv
 from utils import num2str
 
-def run_extremes(knot_range=(0.001, 100),
-                 fuel_range=(0.001, 100),
+def run_extremes(knot_range=(0.001, 100, 6),
+                 fuel_range=(0.001, 100, 6),
                  thrust_limit=1.0,
                  save_dir=join(getcwd(), 'ocp_paths', 'pareto_extremes'),
                  view_distance_str='1.5m'
@@ -23,8 +23,8 @@ def run_extremes(knot_range=(0.001, 100),
     print('Knot Weight Extremes: ', knot_range)
     print('Fuel Weight Extremes: ', fuel_range)
 
-    knot_weights = np.array([knot_range[1], knot_range[1], knot_range[0], knot_range[0]])
-    fuel_weights = np.array([fuel_range[0], fuel_range[1], fuel_range[1], fuel_range[0]])
+    knot_weights = np.logspace(np.log10(knot_range[0]), np.log10(knot_range[1]), knot_range[2])
+    fuel_weights = np.logspace(np.log10(knot_range[0]), np.log10(knot_range[1]), knot_range[2])
 
     for kw, fw in zip(knot_weights, fuel_weights):
         k_str = num2str(kw)
@@ -48,9 +48,9 @@ if __name__ == "__main__":
     else: thrust_limit_input = 1.0
     if len(argv) > 2: soln_folder = argv[2]
     else: soln_folder = 'pareto_extremes'
-    if len(argv) > 4: knot_range_input = (float(argv[3]), float(argv[4]))
-    else: knot_range_input = (0.001, 100)
-    if len(argv) > 6: fuel_range_input = (float(argv[5]), float(argv[6]))
-    else: fuel_range_input = (0.001, 100)
+    if len(argv) > 5: knot_range_input = (float(argv[3]), float(argv[4]), float(argv[5]))
+    else: knot_range_input = (0.01, 10, 4)
+    if len(argv) > 8: fuel_range_input = (float(argv[6]), float(argv[7]), float(argv[8]))
+    else: fuel_range_input = (0.01, 10, 4)
     run_extremes(knot_range=knot_range_input, fuel_range=fuel_range_input,
                  thrust_limit=thrust_limit_input, save_dir=join(getcwd(), 'ocp_paths', soln_folder))
