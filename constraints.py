@@ -1,4 +1,4 @@
-from casadi import dot, fmax, sumsqr, sum1, sum2, sqrt, fmin
+from casadi import dot, fmax, sumsqr, sum1, sum2, sqrt, fmin, mtimes
 from numpy.linalg import norm
 import numpy as np
 
@@ -10,29 +10,46 @@ def enforce_convex_hull(normals, points, opti, X, min_station_distance):
     opti - opti stack variable
     X - state variable MX.shape(num_timesteps, 6)
     """
-    num_normals = normals.shape[0]
-    num_timesteps = X.shape[0]
+    # normalize face normals
+    N = normals/norm(normals, axis=1)
 
-    # for each state timestep we apply the convex hull keepout constraint
-    for j in range(num_timesteps):
+    # compute state-centroid matrix:
+    X_cur = np.array(opti.value(X))
+    R = np.subtract.outer(X_cur[:,:3], points)[:,range(3),range(3),:].transpose(0,2,1)
 
-        # create a convex hull keepout constraint for each time step:
-        dot_max = -1 # we can instantiate the max dot product as -1 because dot products less than zero do not satisfy the constraint (we take maximum)
-        for i in range(num_normals):
+    # manual dot product from each normal--state-centroid combination
+    # >> create new axis along timesteps, elementwise multiply, then add along spatial dim axis (last one) to take manual dot product
+    dot_outer = np.sum(X_cur[np.newaxis,:,:]*R, axis=-1) # (num_timesteps, num_normals)
 
-            # first retrieve parameters for each face instance
-            n = normals[[i],:] # face normal
-            n = n/norm(n) # normalize normal
-            p = points[[i],:] # centroid corresponding to face normal
-            x = X[j,:3] # state at timestep j (just position)
-            r = x-p # vector from face centroid to state position
+    # find maximum for each state along second axis (normals axis)
+    max_dot_idx = np.argmax(dot_outer, axis=1)
 
-            # only one dot product must be greater than zero so we take the maximum value
-            # of all of them to use as the constraint (for each timestep)
-            dot_max = fmax(dot_max, dot(n,r)) # Given convexity, pull out the closest face to x (state)
+    # now compute the dot product for each timestep with max_dot_idx since we now know which normal-centroid (face) corresponds to each state
+    dot = np.sum(X[:,:3]*N[max_dot_idx,:], axis=1) # size(num_timesteps)
+
+    # enforce dot product being larger than a minimum distance value
+    opti.subject_to(dot > min_station_distance)
+
+    # # for each state timestep we apply the convex hull keepout constraint
+    # for j in range(num_timesteps):
+
+    #     # create a convex hull keepout constraint for each time step:
+    #     dot_max = -1 # we can instantiate the max dot product as -1 because dot products less than zero do not satisfy the constraint (we take maximum)
+    #     for i in range(num_normals):
+
+    #         # first retrieve parameters for each face instance
+    #         n = normals[[i],:] # face normal
+    #         n = n/norm(n) # normalize normal
+    #         p = points[[i],:] # centroid corresponding to face normal
+    #         x = X[j,:3] # state at timestep j (just position)
+    #         r = x-p # vector from face centroid to state position
+
+    #         # only one dot product must be greater than zero so we take the maximum value
+    #         # of all of them to use as the constraint (for each timestep)
+    #         dot_max = fmax(dot_max, dot(n,r)) # Given convexity, pull out the closest face to x (state)
         
-        # if max dot product value is above zero, then constraint is met (only one needs to be greater)
-        opti.subject_to(dot_max > min_station_distance)
+    #     # if max dot product value is above zero, then constraint is met (only one needs to be greater)
+    #     opti.subject_to(dot_max > min_station_distance)
 
 def integrate_runge_kutta(X, U, dt, f, opti):
     """
