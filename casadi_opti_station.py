@@ -92,6 +92,7 @@ def ocp_station_knot(meshdir=join(getcwd(), 'model', 'convex_detailed_station'),
     fuel_cost = compute_fuel_cost(U, dt)
 
     ## knot cost function
+    # close_knot_idx = extract_knot_idx(X, opti, knots, knot_idx)
     knot_cost = compute_knot_cost(X, knots, knot_idx, closest=closest_knot)
 
     ## Path length cost
@@ -143,30 +144,11 @@ def ocp_station_knot(meshdir=join(getcwd(), 'model', 'convex_detailed_station'),
     np.savetxt(join(save_folder, save_path + '_U.csv'), u_opt)
     np.savetxt(join(save_folder, save_path + '_t.csv'), np.insert(np.cumsum(dt),0,0))
 
-    if show: 
-        meshfiles = []
-        for i in range(15):
-            meshfiles.append(join(meshdir, str(i) + '.stl'))
-        # meshfile = join(filename, 'mercury_convex.stl')
-
-        ### No longer accurate:
-        ## knot cost function
-        # knot_cost = 0
-        # for i, k in enumerate(knot_idx):
-        #     knot_cost += sumsqr(x_opt[k,:3].T - knots[i,:3])
-        # fuel_cost = np.sum(u_opt**2)/g0/Isp
-        # path_cost = np.sum((x_opt[1:,:] - x_opt[:-1,:])**2)
-        # print('Knot Cost = ', knot_cost, flush=True)
-        # print('Fuel Cost = ', fuel_cost, flush=True)
-        # print('Path Cost = ', path_cost, flush=True)
-        # print('Plotting Solution')
-
-        plot_solution3_convex_hull(x_opt, u_opt, meshfiles, dt, save_fig_file=join('path_figures', 'ocp'), station=True)
-
 
 if __name__ == "__main__":
-    # example: python casadi_opti.py 0.2 1 1 1
+    # example: python casadi_opti_station.py 0.2 1 1 1
     # read in thrust limit
+
     if len(argv) > 1: thrust_limit_input = float(argv[1])
     else: thrust_limit_input = 0.2
 
@@ -191,9 +173,12 @@ if __name__ == "__main__":
     if len(argv) > 6 and argv[6] == '-l': local_input=True
     else: local_input=False
 
+    if len(argv) > 7: save_dir_input = join(getcwd(), 'ocp_paths', argv[7])
+    else: save_dir_input=join(getcwd(), 'ocp_paths', 'default')
+
     # save_dir_input = 'thrust_test_k_' + k_str + '_p_' + p_str + '_f_' + f_str
 
-    ocp_station_knot(view_distance=view_distance, local=local_input, thrust_limit=thrust_limit_input, k_weight=knot_cost_weight, p_weight=path_cost_weight, f_weight=fuel_cost_weight)
+    ocp_station_knot(save_folder=save_dir_input, view_distance=view_distance, local=local_input, thrust_limit=thrust_limit_input, k_weight=knot_cost_weight, p_weight=path_cost_weight, f_weight=fuel_cost_weight)
 
     # old parsing code
     # if str(knot_cost_weight)[-1] == '0': k_str = str(knot_cost_weight)[:-2]

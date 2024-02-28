@@ -71,7 +71,7 @@ def generate_pareto_grid_parallel(knot_range=(0.001, 100, 12),
 
             arg_list.append(args)
 
-    with Pool() as p:
+    with Pool(2) as p:
         r = list(tqdm(p.imap(ocp_parallel, arg_list), total=len(arg_list)))
 
 def generate_pareto_grid(knot_range=(0.001, 100, 12),
