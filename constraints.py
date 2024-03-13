@@ -3,7 +3,44 @@ from numpy.linalg import norm
 import numpy as np
 
 def enforce_convex_hull(normals, points, opti, X, min_station_distance):
+    """enforce the convex hull obstacle given face noramls and centroids on the opti stack
+
+    Args:
+        normals (np.ndarray(num_normals, 3)): list of 3d vectors with convex hull face normals
+        points (np.ndarray(num_centroids, 3)): list of 3d vectors containing triangular mesh face centroids
+        opti (Opti): opti stack object for ocp
+        X (MX(num_timesteps, 6)): state vector 
+        min_station_distance (float): minimum distance of state vector configurations from the convex hull being enforced
     """
+    # get dimensions
+    num_timesteps = X.shape[0]
+    num_normals = normals.shape[0]
+
+    # for each state timestep we apply the convex hull keepout constraint
+    for j in range(num_timesteps):
+
+        # create a convex hull keepout constraint for each time step:
+        dot_max = -1 # we can instantiate the max dot product as -1 because dot products less than zero do not satisfy the constraint (we take maximum)
+        for i in range(num_normals):
+
+            # first retrieve parameters for each face instance
+            n = normals[[i],:] # face normal
+            n = n/norm(n) # normalize normal
+            p = points[[i],:] # centroid corresponding to face normal
+            x = X[j,:3] # state at timestep j (just position)
+            r = x-p # vector from face centroid to state position
+
+            # only one dot product must be greater than zero so we take the maximum value
+            # of all of them to use as the constraint (for each timestep)
+            dot_max = fmax(dot_max, dot(n,r)) # Given convexity, pull out the closest face to x (state)
+        
+        # if max dot product value is above zero, then constraint is met (only one needs to be greater)
+        opti.subject_to(dot_max > min_station_distance)
+
+
+def enforce_convex_hull_value(normals, points, opti, X, min_station_distance):
+    """
+    this doesn't work on account of failed assertion_solved() case in OptiNode
     create constraint formulation for opti stack for a convex hull given face normals and centroids
     normals - list of 3d vectors (dir) np.ndarray(num_normals, 3)
     centroids - list of 3d vectors (position) np.ndarray(num_centroids, 3)
@@ -29,27 +66,6 @@ def enforce_convex_hull(normals, points, opti, X, min_station_distance):
 
     # enforce dot product being larger than a minimum distance value
     opti.subject_to(dot > min_station_distance)
-
-    # # for each state timestep we apply the convex hull keepout constraint
-    # for j in range(num_timesteps):
-
-    #     # create a convex hull keepout constraint for each time step:
-    #     dot_max = -1 # we can instantiate the max dot product as -1 because dot products less than zero do not satisfy the constraint (we take maximum)
-    #     for i in range(num_normals):
-
-    #         # first retrieve parameters for each face instance
-    #         n = normals[[i],:] # face normal
-    #         n = n/norm(n) # normalize normal
-    #         p = points[[i],:] # centroid corresponding to face normal
-    #         x = X[j,:3] # state at timestep j (just position)
-    #         r = x-p # vector from face centroid to state position
-
-    #         # only one dot product must be greater than zero so we take the maximum value
-    #         # of all of them to use as the constraint (for each timestep)
-    #         dot_max = fmax(dot_max, dot(n,r)) # Given convexity, pull out the closest face to x (state)
-        
-    #     # if max dot product value is above zero, then constraint is met (only one needs to be greater)
-    #     opti.subject_to(dot_max > min_station_distance)
 
 def integrate_runge_kutta(X, U, dt, f, opti):
     """
@@ -133,14 +149,16 @@ def compute_knot_cost(X, knots, knot_idx, closest=False):
         # knot_cost += sumsqr(X[k,:3].T - knots[i,:3])
 
     if closest:
-        lastidx = 0
+        last_idx = 0
         knot_cost = 0
         for ki in range(len(knot_idx)-1):
             closest_dist = np.Inf
-            for idx in range(lastidx, (knot_idx[ki] + knot_idx[ki+1])//2+1):
+            next_idx = (knot_idx[ki] + knot_idx[ki+1])//2+1
+            for idx in range(last_idx, next_idx):
                 dist = sumsqr(knots[[ki], :3] - X[[idx], :3]) # compare state, look at reshape
                 closest_dist = fmin(closest_dist, dist)
             knot_cost += closest_dist
+            last_idx = next_idx
     else: knot_cost = sumsqr(X[knot_idx, :3] - knots[:, :3])
 
     return knot_cost
