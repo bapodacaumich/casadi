@@ -8,9 +8,26 @@ from initial_conditions import convex_hull_station
 from constraints import *
 import numpy as np
 
+def ocp_parallel(args):
+    """
+    parallel wrpper for ocp_station_knot()
+
+    arg: list of args for ocp_station_knot
+    """
+    save_dir, filestr, thrust_limit, kw, pw, fw, closest_knot_bool, view_distance_str, input_local = args
+
+    ocp_station_knot(save_folder=save_dir,
+                     save_path=filestr,
+                     thrust_limit=thrust_limit,
+                     k_weight=kw,
+                     p_weight=pw,
+                     f_weight=fw,
+                     closest_knot=closest_knot_bool,
+                     view_distance=view_distance_str,
+                     local=input_local
+                     )
+
 def ocp_station_knot(meshdir=join(getcwd(), 'model', 'convex_detailed_station'),
-                    #  knotfile=join(getcwd(), 'ccp_paths', '1.5m43.662200005359864.csv'),
-                     # save_dir='thrust_test_k_1_p_1_f_1',
                      save_folder=join(getcwd(), 'ocp_paths', 'default'),
                      save_path=None,
                      view_distance='1.5m',

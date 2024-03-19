@@ -1,4 +1,4 @@
-from casadi_opti_station import ocp_station_knot
+from casadi_opti_station import ocp_station_knot, ocp_parallel
 import numpy as np
 from os.path import join
 from os import getcwd
@@ -6,24 +6,6 @@ from sys import argv
 from utils import num2str
 from tqdm import tqdm
 from multiprocessing import Pool
-
-def ocp_parallel(args):
-    """
-    parallel wrpper for ocp_station_knot()
-
-    arg: list of args for ocp_station_knot
-    """
-    save_dir, filestr, thrust_limit, kw, pw, fw, closest_knot_bool, view_distance_str = args
-
-    ocp_station_knot(save_folder=save_dir,
-                     save_path=filestr,
-                     thrust_limit=thrust_limit,
-                     k_weight=kw,
-                     p_weight=pw,
-                     f_weight=fw,
-                     closest_knot=closest_knot_bool,
-                     view_distance=view_distance_str
-                     )
 
 def generate_pareto_grid_parallel(knot_range=(0.001, 100, 12),
                                   fuel_range=(0.001, 100, 12),
@@ -66,7 +48,8 @@ def generate_pareto_grid_parallel(knot_range=(0.001, 100, 12),
                    0.1,
                    fw,
                    True,
-                   view_distance_str
+                   view_distance_str,
+                   False
                    )
 
             arg_list.append(args)
