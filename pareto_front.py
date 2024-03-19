@@ -265,8 +265,8 @@ def compute_cost_single_soln(knotfile=join(getcwd(), 'ccp_paths', '1.5m43.662200
 
 def generate_pareto_front_grid(knotfile=join(getcwd(), 'ccp_paths', '1.5m43.662200005359864.csv'),
                                solution_dir=join(getcwd(), 'ocp_paths', 'pf_0.2'),
-                               knot_range=(0.1, 100, 10),
-                               fuel_range=(0.1, 100, 10),
+                               knot_range=(0.001, 100, 11),
+                               fuel_range=(0.001, 100, 11),
                                coverage_input=True
                                ):
     """
@@ -319,8 +319,8 @@ def generate_pareto_front_grid(knotfile=join(getcwd(), 'ccp_paths', '1.5m43.6622
 
 def pareto_load_plot(cost_dir=join(getcwd(), 'pareto_front','pf_0.2'),
                      solution_dir=join(getcwd(), 'ocp_paths', 'pf_0.2'), 
-                     knot_range=(0.1, 100, 11),
-                     fuel_range=(0.1, 100, 11)):
+                     knot_range=(0.001, 100, 11),
+                     fuel_range=(0.001, 100, 11)):
     """load costs from pareto front solutions from cost_dir and plot
 
     Args:
@@ -341,21 +341,23 @@ def pareto_load_plot(cost_dir=join(getcwd(), 'pareto_front','pf_0.2'),
     knot_costs = np.loadtxt(join(plot_file_save, 'kcost.csv'))
     path_costs = np.loadtxt(join(plot_file_save, 'pcost.csv'))
     coverage = np.loadtxt(join(plot_file_save, 'cov.csv'))
+
+    print('\nObjective Metric Vector Lengths (should be the same): ')
+    print(len(weight_combs))
     print(fuel_costs.shape)
     print(knot_costs.shape)
-    print(path_costs.shape)
     print(coverage.shape)
-    # path_times = np.loadtxt(join(plot_file_save, 'ptime.csv'))
     
     fk_idx, fc_idx, kc_idx = plot_pareto_front(fuel_costs, knot_costs, path_costs, coverage, save_file=join(cost_dir, 'plot_with_front.png'))
-    print(fk_idx)
-    print(fc_idx)
-    print(kc_idx)
+    print('\nBest Solution Indices:')
+    print(' Fuel-Knot Front Indices: ', fk_idx)
+    print(' Fuel-Coverage Front Indices: ', fc_idx)
+    print(' Knot-Coverage Front Indices: ', kc_idx, '\n')
     out_str = [s + ',' + str(fc) + ',' + str(kc) + ',' + str(cov) for s, fc, kc, cov in zip(weight_combs, fuel_costs, knot_costs, coverage)]
     out_str = np.array(out_str)
     print('Fuel-Knot Front Weights: ', *out_str[fk_idx])
     print('Fuel-Coverage Front Weights: ', *out_str[fc_idx])
-    print('Knot-Coverage Front Weights: ', *out_str[kc_idx])
+    print('Knot-Coverage Front Weights: ', *out_str[kc_idx], '\n')
     return
 
 def generate_pareto_front(knotfile=join(getcwd(), 'ccp_paths', '1.5m43.662200005359864.csv'),
@@ -404,6 +406,7 @@ if __name__ == '__main__':
         if len(argv) > 2: save_dir=argv[2]
         else: save_dir='pf_0.2'
         if len(argv) > 3: compute_coverage=bool(argv[3])
+        else: compute_coverage=True
         solution_directory = join(getcwd(), 'ocp_paths', save_dir)
         generate_pareto_front_grid(solution_dir=solution_directory, coverage_input=compute_coverage)
     elif argv[1] == '-load':
