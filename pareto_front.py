@@ -2,12 +2,13 @@ import numpy as np
 import matplotlib.pyplot as plt
 from numpy.linalg import norm
 from os.path import join, normpath, basename, exists
-from os import getcwd, mkdir
+from os import getcwd, mkdir, listdir
 from utils import filter_path_na, compute_time_intervals, compute_path_coverage, num2str
 from sys import argv
 from tqdm import tqdm
 
 def load_solution(file_dir=join(getcwd(), 'ocp_paths', 'thrust_test'),
+                  filename=None,
                   thrust_str=None,
                   kf_weights=None
                   ):
@@ -18,7 +19,11 @@ def load_solution(file_dir=join(getcwd(), 'ocp_paths', 'thrust_test'),
 
     X, U, t = None, None, None
     # load solutions
-    if thrust_str is not None:
+    if filename is not None:
+        X = np.loadtxt(join(file_dir, filename + '_X.csv'), delimiter=' ')
+        U = np.loadtxt(join(file_dir, filename + '_U.csv'), delimiter=' ')
+        t = np.loadtxt(join(file_dir, filename + '_t.csv'), delimiter=' ')
+    elif thrust_str is not None:
         X = np.loadtxt(join(file_dir, '1.5m_X_' + thrust_str + '.csv'), delimiter=' ')
         U = np.loadtxt(join(file_dir, '1.5m_U_' + thrust_str + '.csv'), delimiter=' ')
         t = np.loadtxt(join(file_dir, '1.5m_t_' + thrust_str + '.csv'), delimiter=' ')
@@ -85,7 +90,6 @@ def compute_objective_costs(X,
                             t,
                             knotfile=join(getcwd(), 'ccp_paths', '1.5m43.662200005359864.csv'),
                             compute_coverage=True,
-                            velocity = 0.2,
                             square=False
                             ):
     """
@@ -137,7 +141,7 @@ def compute_objective_costs(X,
     Isp = 80 # specific impulse of rocket engine
     m = 5.75 # mass of agent
     dt = np.diff(t)
-    if square: fuel_cost = np.sum((np.sum(U**2, axis=1)/g0**2/Isp**2)*dt**2)   # convert kg to grams
+    if square: fuel_cost = np.sum((np.sum(U**2, axis=1)/g0**2/Isp**2)*dt**2) * 1000 # convert kg to grams
     else: fuel_cost = np.sum((np.sqrt(np.sum(U**2, axis=1))/g0/Isp)*dt) * 1000 # convert kg to grams
 
     if compute_coverage: coverage = compute_path_coverage(knots, X, t)
@@ -242,25 +246,31 @@ def compute_cost_single_soln(knotfile=join(getcwd(), 'ccp_paths', '1.5m43.662200
                              solution_dir=join(getcwd(), 'ocp_paths', 'pf_0.2'),
                              knot_weight=1,
                              fuel_weight=1,
+                             soln_file=None,
                              compute_coverage=True
                              ):
     # build file path for queried solution
-    kstr = num2str(knot_weight)
-    fstr = num2str(fuel_weight)
-    file_path = join(solution_dir, 'k_' + kstr + '_f_' + fstr + '_X.csv')
+    if soln_file is None:
+        kstr = num2str(knot_weight)
+        fstr = num2str(fuel_weight)
+        file_path = join(solution_dir, 'k_' + kstr + '_f_' + fstr + '_X.csv')
+    else:
+        file_path = join(solution_dir, soln_file + '_X.csv')
 
     # if the file exists, compute the costs
     if exists(file_path):
-        X, U, t = load_solution(file_dir=solution_dir, kf_weights=(kstr, fstr))
+        if soln_file is None: X, U, t = load_solution(file_dir=solution_dir, kf_weights=(kstr, fstr))
+        else: X, U, t = load_solution(file_dir=solution_dir, filename=soln_file)
         fuel_cost, knot_cost, path_cost, coverage_ratio, path_time = compute_objective_costs(X,
                                                                                              U,
                                                                                              t, 
                                                                                              knotfile,
-                                                                                             compute_coverage=compute_coverage,
-                                                                                             square=True
+                                                                                             compute_coverage=compute_coverage
                                                                                              )
 
-        print('Weights and costs: Knot = ', knot_weight, '| Fuel = ', fuel_weight, ' | Fuel Cost: ', fuel_cost, ' | Knot Cost: ', knot_cost, ' Coverage (%): ', coverage_ratio*100)
+        # print('Weights and costs: Knot = ', knot_weight, '| Fuel = ', fuel_weight, ' | Fuel Cost: ', fuel_cost, ' | Knot Cost: ', knot_cost, ' Coverage (%): ', coverage_ratio*100)
+        if len(soln_file) == 4: print('global,', soln_file, ',', fuel_cost, ',', knot_cost, ',', coverage_ratio)
+        else: print('local,', soln_file[:4], ',', fuel_cost, ',', knot_cost, ',', coverage_ratio)
     else: print('File missing: ', file_path)
 
 def generate_pareto_front_grid(knotfile=join(getcwd(), 'ccp_paths', '1.5m43.662200005359864.csv'),
@@ -398,6 +408,40 @@ def generate_pareto_front(knotfile=join(getcwd(), 'ccp_paths', '1.5m43.662200005
                       save_file=join(plot_file_save, 'pareto_front_' + thrust_iter[0] + '_to_' + thrust_iter[-1]))
     return
 
+def objectives_all_distances():
+    """
+    compute the objectives of coverage, knot ocst, and fuel cost for all final paths (distances and locality)
+    """
+    soln_dir_in = 'all_ccp'
+    for d_int in range(0, 9):
+        d = (d_int+1)/2  # 0 1 2 ... 8 --> 0.5 1.0 2.5 ... 4.5
+        soln_file_in = str(d) + 'm'
+        # local
+        for file in listdir(join(getcwd(), 'ccp_paths')):
+            if str(d) + 'm' == file[:4]:
+                if (file[5] == 'l'):
+                    knotfilein=join(getcwd(), 'ccp_paths', file)
+                    break
+        # print('Importing Knot File: ', knotfilein)
+        compute_cost_single_soln(knotfile=join(getcwd(), 'ccp_paths', knotfilein),
+                                    solution_dir=join(getcwd(), 'ocp_paths', soln_dir_in),
+                                    soln_file=soln_file_in,
+                                    compute_coverage=True
+                                    )
+        # global
+        soln_file_in = str(d) + 'm_local'
+        for file in listdir(join(getcwd(), 'ccp_paths')):
+            if str(d) + 'm' == file[:4]:
+                if (file[5] != 'l'):
+                    knotfilein=join(getcwd(), 'ccp_paths', file)
+                    break
+        # print('Importing Knot File: ', knotfilein)
+        compute_cost_single_soln(knotfile=join(getcwd(), 'ccp_paths', knotfilein),
+                                    solution_dir=join(getcwd(), 'ocp_paths', soln_dir_in),
+                                    soln_file=soln_file_in,
+                                    compute_coverage=True
+                                    )
+
 if __name__ == '__main__':
     # python pareto_front.py 1 1 1 0.2 1.5
     # python pareto_front.py -grid pf_0.2
@@ -428,6 +472,25 @@ if __name__ == '__main__':
                                  fuel_weight=fw,
                                  compute_coverage=True
                                  )
+    elif argv[1] == '-f':
+        soln_dir_in=argv[2]
+        soln_file_in=argv[3]
+        view_distance=argv[4]
+        local= (argv[5] == 'True') or (argv[5] == 'true')
+        print('local? ' + str(local))
+        for file in listdir(join(getcwd(), 'ccp_paths')):
+            if str(view_distance) == file[:4]:
+                if ((file[5] == 'l') and local) or ((file[5] != 'l') and not local):
+                    knotfilein=join(getcwd(), 'ccp_paths', file)
+                    break
+        print('Importing Knot File: ', knotfilein)
+        compute_cost_single_soln(knotfile=join(getcwd(), 'ccp_paths', knotfilein),
+                                 solution_dir=join(getcwd(), 'ocp_paths', soln_dir_in),
+                                 soln_file=soln_file_in,
+                                 compute_coverage=True
+                                 )
+    elif argv[1] == '-all':
+        objectives_all_distances()
     else:
         if len(argv) > 1: k_weight = argv[1] # string
         else: k_weight = '1'

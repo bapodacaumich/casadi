@@ -89,8 +89,6 @@ def process_data(knots, x, t):
 
 
 def compute_path_coverage(knots, x, t,
-                        #   soln_dir=join(getcwd(), 'ocp_paths', 'thrust_test_k_100_p_0_1_f_1'),
-                        #   knot_file=join(getcwd(), 'ccp_paths', '1.5m43.662200005359864.csv'),
                           meshdir='remeshed'):
     """compute coverage of path X over meshfiles
 
@@ -116,7 +114,8 @@ def compute_path_coverage(knots, x, t,
 
     # iterate through poses and determine coverage for every mesh face
     coverage_count = 0
-    for face_count, cur_mesh in tqdm(zip(face_counts, meshes), total=len(face_counts), position=2, leave=False):
+    # for face_count, cur_mesh in tqdm(zip(face_counts, meshes), total=len(face_counts), position=2, leave=False):
+    for face_count, cur_mesh in zip(face_counts, meshes):
     # for face_count, cur_mesh in zip(face_counts, meshes):
         cur_coverage_map = np.zeros(face_count)
 

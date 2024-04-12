@@ -38,7 +38,7 @@ def generate_soln_parallel(thrust_limit=1.0,
                 input_local
                 )
 
-        arg_list.append(args)
+        if input_local: arg_list.append(args)
 
     with Pool(num_processes) as p:
         r = list(p.imap(ocp_parallel, arg_list))

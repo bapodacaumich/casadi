@@ -6,9 +6,9 @@ from os import getcwd, listdir, mkdir
 from utils import load_path_data, process_data
 
 
-def package_data(soln_dir=join(getcwd(), 'ocp_paths', 'final'),
+def package_data(soln_dir=join(getcwd(), 'ocp_paths', 'all_ccp'),
                  knot_dir=join(getcwd(), 'ccp_paths'),
-                 save_dir=join(getcwd(), 'final')):
+                 save_dir=join(getcwd(), 'all_ccp_packaged')):
     """
     integrate orientation data with state data and concatenate with time vector
     """
