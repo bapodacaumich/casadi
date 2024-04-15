@@ -9,7 +9,7 @@ def generate_soln_parallel(thrust_limit=1.0,
                            knot_weight=10,
                            path_weight=0.1,
                            fuel_weight=10,
-                           num_processes=4,
+                           num_processes=1,
                            save_dir=join(getcwd(), 'ocp_paths', 'pareto_front_solutions'),
                            ):
     """generate a solution for each path file in ccp_paths
