@@ -1,3 +1,4 @@
+import os 
 from os import getcwd, listdir
 from os.path import join
 from stl import mesh
@@ -102,10 +103,24 @@ def plot_solution(station=False, mockup=False, soln_dir='thrust_test_k_1_p_1_f_1
     # plot fig
     plt.show()
 
-    # savefig
-    # savepath = join(getcwd(), 'gcf.png')
-    # print('saving: ', savepath)
-    # figure.savefig(savepath, dpi=300)
+    # # savefig
+    # savefile = os.path.basename(os.path.normpath(soln_file))
+    # # print('saving: ', savepath)
+    # # figure.savefig(savepath, dpi=1000)
+
+    # view_num = 0
+    # ax.view_init(elev=30, azim=30)
+    # plt.savefig(os.path.join(getcwd(), 'path_figures', + str(view_num) + '.png'), dpi=save_dpi)
+
+    # # view from underneath
+    # ax.view_init(elev=-30, azim=30)
+    # view_num += 1
+    # plt.savefig(os.path.join(save_path, figname + str(view_num) + '.png'), dpi=save_dpi)
+
+    # # rotate around
+    # ax.view_init(elev=30, azim=120)
+    # view_num += 1
+    # plt.savefig(os.path.join(save_path, figname + str(view_num) + '.png'), dpi=save_dpi)
 
 if __name__ == '__main__':
     # python plot_solution.py 0.2 1 1 1
