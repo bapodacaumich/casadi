@@ -67,7 +67,8 @@ def plot_solution(station=False, mockup=False, soln_dir='thrust_test_k_1_p_1_f_1
     axes.auto_scale_xyz(scale, scale, scale)
 
     # plot knot points
-    axes.plot(knots[:,0], knots[:,1], knots[:,2],'rx')
+    axes.plot(knots[:,0], knots[:,1], knots[:,2],'k--')
+    axes.scatter(knots[:,0], knots[:,1], knots[:,2])
 
     # # load path
     if soln_file is None:
