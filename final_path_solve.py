@@ -6,9 +6,11 @@ from utils import num2str
 from multiprocessing import Pool
 
 def generate_soln_parallel(thrust_limit=1.0,
-                           knot_weight=10,
+                           knot_weight_local=10,
+                           fuel_weight_local=10,
+                           knot_weight_global=10,
+                           fuel_weight_global=10,
                            path_weight=0.1,
-                           fuel_weight=10,
                            num_processes=1,
                            save_dir=join(getcwd(), 'ocp_paths', 'pareto_front_solutions'),
                            ):
@@ -27,18 +29,30 @@ def generate_soln_parallel(thrust_limit=1.0,
     for file in listdir(join(getcwd(), 'ccp_paths')):
         input_local = (file[4] == '_')
 
-        args = (save_dir,
-                None,
-                thrust_limit,
-                knot_weight,
-                path_weight,
-                fuel_weight,
-                True,
-                file[:4],
-                input_local
-                )
+        if input_local:
+            args = (save_dir,
+                    None,
+                    thrust_limit,
+                    knot_weight_local,
+                    path_weight,
+                    fuel_weight_local,
+                    True,
+                    file[:4],
+                    input_local
+                    )
+        else:
+            args = (save_dir,
+                    None,
+                    thrust_limit,
+                    knot_weight_global,
+                    path_weight,
+                    fuel_weight_global,
+                    True,
+                    file[:4],
+                    input_local
+                    )
 
-        if input_local: arg_list.append(args)
+        arg_list.append(args)
 
     with Pool(num_processes) as p:
         r = list(p.imap(ocp_parallel, arg_list))
@@ -46,8 +60,10 @@ def generate_soln_parallel(thrust_limit=1.0,
 if __name__ == "__main__":
     save_folder='all_ccp'
     generate_soln_parallel(thrust_limit=1.0,
-                           knot_weight=10,
+                           knot_weight_local=100,
+                           fuel_weight_local=1,
+                           knot_weight_global=10,
+                           fuel_weight_global=10,
                            path_weight=0.1,
-                           fuel_weight=10,
                            save_dir=join(getcwd(), 'ocp_paths', save_folder)
                            )
