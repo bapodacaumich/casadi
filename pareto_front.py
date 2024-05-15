@@ -73,7 +73,12 @@ def compute_knot_cost_numpy(X,
             closest_dist = np.inf
             for idx in range(lastidx, (knot_idx[ki] + knot_idx[ki+1])//2+1):
                 if square: dist = np.sum((knots[ki, :3].reshape((1,-1)) - X[idx, :3])**2) # compare state
-                else: dist = np.sqrt(np.sum((knots[ki, :3].reshape((1,-1)) - X[idx, :3])**2)) # compare state
+                else:
+                    try:
+                        dist = np.sqrt(np.sum((knots[ki, :3].reshape((1,-1)) - X[idx, :3])**2)) # compare state
+                    except:
+                        print(lastidx, (knot_idx[ki] + knot_idx[ki+1])//2+1)
+                        print(idx, X.shape)
                 closest_dist = min(closest_dist, dist)
             knot_cost += closest_dist
 
@@ -172,12 +177,19 @@ def parse_pareto_front(x, y):
 
     return np.array(front)[:,0], np.array(front)[:,1], np.array(rest)[:,0], np.array(rest)[:,1], front_idx
 
-def plot_pareto_front(fuel_costs, knot_costs, path_costs, coverage, thrust_values=None, save_file=None):
+def plot_pareto_front(fuel_costs, knot_costs, path_costs, coverage, thrust_values=None, save_file=None, fs=24, lfs=22, separate=False, local=False):
     """
     plotting pareto front from data
     """
 
-    fig, ((ax0, ax1), (ax2, ax3)) = plt.subplots(2, 2, figsize=(50,30))
+    if separate:
+        w = 8
+        h = 5
+        fig0, ax0 = plt.subplots(1,1,figsize=(w,h))
+        fig1, ax1 = plt.subplots(1,1,figsize=(w,h))
+        fig2, ax2 = plt.subplots(1,1,figsize=(w,h))
+        fig = (fig0, fig1, fig2)
+    else: fig, ((ax0, ax1), (ax2, ax3)) = plt.subplots(2, 2, figsize=(50,30))
 
     # preprocess
     fuel_fkfront, knot_fkfront, fuel_fkrest, knot_fkrest, fk_idx = parse_pareto_front(fuel_costs, knot_costs)
@@ -186,32 +198,42 @@ def plot_pareto_front(fuel_costs, knot_costs, path_costs, coverage, thrust_value
 
     # fuel_costs against knot_costs
     ax0.plot(fuel_fkrest, knot_fkrest, 'rx', label='')
-    ax0.plot(fuel_costs[fc_idx], knot_costs[fc_idx], 'bo-', label='fuel-coverage front')
-    ax0.plot(fuel_costs[kc_idx], knot_costs[kc_idx], 'go-', label='knot-coverage front')
+    # ax0.plot(fuel_costs[fc_idx], knot_costs[fc_idx], 'bo-', label='fuel-coverage front')
+    # ax0.plot(fuel_costs[kc_idx], knot_costs[kc_idx], 'go-', label='knot-coverage front')
     ax0.plot(fuel_costs[fk_idx], knot_costs[fk_idx], 'ko-', label='fuel-knot front')
-    ax0.set_title('Pareto Front: Fuel and Knot Point Costs with annotated Thrust Limits') 
-    ax0.set_xlabel('Fuel Cost (g)')
-    ax0.set_ylabel('Knot Point Cost (m)')
+    # ax0.set_title('Pareto Front: Fuel and Knot Point Costs with annotated Thrust Limits', fontsize=fs) 
+    # ax0.set_title('Fuel Cost vs Knot Cost', fontsize=fs)
+    ax0.set_xlabel('Fuel Cost (g)', fontsize=fs)
+    ax0.set_ylabel('Knot Cost (m)', fontsize=fs)
+    ax0.tick_params(axis='both', which='major', labelsize=lfs)
+    ax0.grid(True)
     if thrust_values is not None: annotate_thrust(ax0, fuel_costs, knot_costs, thrust_values)
 
     # fuel_costs against coverage
     ax1.plot(fuel_fcrest, 100*cov_fcrest, 'rx')
-    ax1.plot(fuel_costs[fk_idx], 100*(1-coverage[fk_idx]), 'ko-', label='fuel-knot front')
-    ax1.plot(fuel_costs[kc_idx], 100*(1-coverage[kc_idx]), 'go-', label='knot-coverage front')
+    # ax1.plot(fuel_costs[fk_idx], 100*(1-coverage[fk_idx]), 'ko-', label='fuel-knot front')
+    # ax1.plot(fuel_costs[kc_idx], 100*(1-coverage[kc_idx]), 'go-', label='knot-coverage front')
     ax1.plot(fuel_costs[fc_idx], 100*(1-coverage[fc_idx]), 'bo-', label='fuel-coverage front')
-    ax1.set_title('Pareto Front: Fuel Costs and Coverage Ratio with annotated Thrust Limits')
-    ax1.set_xlabel('Fuel Cost (g)')
-    ax1.set_ylabel('Missed Coverage (%)')
+    # ax1.set_title('Pareto Front: Fuel Costs and Coverage Ratio with annotated Thrust Limits', fontsize=fs)
+    # ax1.set_title('Fuel Cost vs Missed Coverage', fontsize=fs)
+    ax1.set_xlabel('Fuel Cost (g)', fontsize=fs)
+    ax1.set_ylabel('Missed Coverage (%)', fontsize=fs)
+    ax1.tick_params(axis='both', which='major', labelsize=lfs)
+    ax1.set_ylim(-5,80)
+    ax1.grid(True)
     if thrust_values is not None: annotate_thrust(ax1, fuel_costs, coverage, thrust_values)
 
     # knot_costs against coverage
     ax2.plot(knot_kcrest, 100*cov_kcrest, 'rx')
-    ax2.plot(knot_costs[fc_idx], 100*(1-coverage[fc_idx]), 'bo-', label='fuel-coverage front')
-    ax2.plot(knot_costs[fk_idx], 100*(1-coverage[fk_idx]), 'ko-', label='fuel-knot front')
+    # ax2.plot(knot_costs[fc_idx], 100*(1-coverage[fc_idx]), 'bo-', label='fuel-coverage front')
+    # ax2.plot(knot_costs[fk_idx], 100*(1-coverage[fk_idx]), 'ko-', label='fuel-knot front')
     ax2.plot(knot_costs[kc_idx], 100*(1-coverage[kc_idx]), 'go-', label='knot-coverage front')
-    ax2.set_title('Pareto Front: Knot Costs and Coverage Ratio with annotated Thrust Limits')
-    ax2.set_xlabel('Knot Cost (m)')
-    ax2.set_ylabel('Missed Coverage (%)')
+    # ax2.set_title('Pareto Front: Knot Costs and Coverage Ratio with annotated Thrust Limits', fontsize=fs)
+    # ax2.set_title('Knot Cost vs Missed Coverage', fontsize=fs)
+    ax2.set_xlabel('Knot Cost (m)', fontsize=fs)
+    ax2.set_ylabel('Missed Coverage (%)', fontsize=fs)
+    ax2.tick_params(axis='both', which='major', labelsize=lfs)
+    ax2.grid(True)
     if thrust_values is not None: annotate_thrust(ax2, knot_costs, coverage, thrust_values)
 
     # # fuel_costs against path_costs
@@ -228,10 +250,23 @@ def plot_pareto_front(fuel_costs, knot_costs, path_costs, coverage, thrust_value
     # ax2.set_ylabel('Path Length (m)')
     # annotate_thrust(ax2, knot_costs, path_costs, thrust_values)
 
-    fig.set_figwidth(15)
-    fig.set_figheight(10)
-    plt.tight_layout()
-    if save_file is not None: fig.savefig(save_file, dpi=300)
+    if not separate:
+        fig.set_figwidth(15)
+        fig.set_figheight(10)
+
+    if separate:
+        for f in fig:
+            f.tight_layout()
+    else: plt.tight_layout()
+    if save_file is not None:
+        if separate:
+            local_str = ''
+            if local: local_str = '_local'
+            else: local_str='_global'
+            fig0.savefig(save_file+'_fk'+local_str, dpi=300)
+            fig1.savefig(save_file+'_fc'+local_str, dpi=300)
+            fig2.savefig(save_file+'_kc'+local_str, dpi=300)
+        else: fig.savefig(save_file, dpi=300)
     plt.show()
     return fk_idx, fc_idx, kc_idx
 
@@ -273,12 +308,14 @@ def compute_cost_single_soln(knotfile=join(getcwd(), 'ccp_paths', '1.5m43.662200
         else: print('local,', soln_file[:4], ',', fuel_cost, ',', knot_cost, ',', coverage_ratio)
     else: pass # print('File missing: ', file_path)
 
-def generate_pareto_front_grid(knotfile=join(getcwd(), 'ccp_paths', '1.5m43.662200005359864.csv'),
-                               solution_dir=join(getcwd(), 'ocp_paths', 'pf_0.2'),
-                               knot_range=(0.001, 100, 11),
-                               fuel_range=(0.001, 100, 11),
-                               coverage_input=True
-                               ):
+def generate_pareto_front_grid(
+    knotfile=join(getcwd(), 'ccp_paths', '1.5m_local_50.38125797314672.csv'),
+#   knotfile=join(getcwd(), 'ccp_paths', '1.5m43.31340167428126.csv'),
+    solution_dir=join(getcwd(), 'ocp_paths', 'pf_0.2'),
+    knot_range=(0.001, 100, 11),
+    fuel_range=(0.001, 100, 11),
+    coverage_input=True
+    ):
     """
     generate the pareto front for set of solutions
     """
@@ -293,10 +330,10 @@ def generate_pareto_front_grid(knotfile=join(getcwd(), 'ccp_paths', '1.5m43.6622
     k_weights = np.logspace(np.log10(knot_range[0]), np.log10(knot_range[1]), knot_range[2])
     f_weights = np.logspace(np.log10(fuel_range[0]), np.log10(fuel_range[1]), fuel_range[2])
     weight_combs = []
-    # for kw in tqdm(k_weights, position=0):
-    #     for fw in tqdm(f_weights, leave=False, position=1):
-    for kw in k_weights:
-        for fw in f_weights:
+    for kw in tqdm(k_weights, position=0):
+        for fw in tqdm(f_weights, leave=False, position=1):
+    # for kw in k_weights:
+    #     for fw in f_weights:
             file_path = join(solution_dir, 'k_' + num2str(kw) + '_f_' + num2str(fw) + '_X.csv')
             if exists(file_path):
                 weight_combs.append((kw, fw))
@@ -330,7 +367,10 @@ def generate_pareto_front_grid(knotfile=join(getcwd(), 'ccp_paths', '1.5m43.6622
 def pareto_load_plot(cost_dir=join(getcwd(), 'pareto_front','pf_0.2'),
                      solution_dir=join(getcwd(), 'ocp_paths', 'pf_0.2'), 
                      knot_range=(0.001, 100, 11),
-                     fuel_range=(0.001, 100, 11)):
+                     fuel_range=(0.001, 100, 11),
+                     separate=True,
+                     local=False,
+                     ):
     """load costs from pareto front solutions from cost_dir and plot
 
     Args:
@@ -358,7 +398,7 @@ def pareto_load_plot(cost_dir=join(getcwd(), 'pareto_front','pf_0.2'),
     print(knot_costs.shape)
     print(coverage.shape)
     
-    fk_idx, fc_idx, kc_idx = plot_pareto_front(fuel_costs, knot_costs, path_costs, coverage, save_file=join(cost_dir, 'plot_with_front.png'))
+    fk_idx, fc_idx, kc_idx = plot_pareto_front(fuel_costs, knot_costs, path_costs, coverage, save_file=join(cost_dir, 'all_points'), separate=separate, local=local)
     print('\nBest Solution Indices:')
     print(' Fuel-Knot Front Indices: ', fk_idx)
     print(' Fuel-Coverage Front Indices: ', fc_idx)
@@ -370,7 +410,8 @@ def pareto_load_plot(cost_dir=join(getcwd(), 'pareto_front','pf_0.2'),
     print('Knot-Coverage Front Weights: ', *out_str[kc_idx], '\n')
     return
 
-def generate_pareto_front(knotfile=join(getcwd(), 'ccp_paths', '1.5m43.662200005359864.csv'),
+def generate_pareto_front(knotfile=join(getcwd(), 'ccp_paths', '1.5m_local_50.38125797314672.csv'),
+                        #   knotfile=join(getcwd(), 'ccp_paths', '1.5m43.31340167428126.csv'),
                           solution_dir=join(getcwd(), 'ocp_paths', 'thrust_test_k_1_p_1_f_1'),
                           start_thrust=0.5,
                           end_thrust=1.5
@@ -448,19 +489,20 @@ if __name__ == '__main__':
 
     if argv[1] == '-grid':
         if len(argv) > 2: save_dir=argv[2]
-        else: save_dir='pf_0.2'
+        else: save_dir='ck_1.0_local'
         if len(argv) > 3: compute_coverage=bool(argv[3])
         else: compute_coverage=True
         solution_directory = join(getcwd(), 'ocp_paths', save_dir)
         generate_pareto_front_grid(solution_dir=solution_directory, coverage_input=compute_coverage)
     elif argv[1] == '-load':
         if len(argv) > 2: save_dir=argv[2]
-        else: save_dir='pf_0.2'
+        else: save_dir='ck_1.0_local'
         # solution_directory = join(getcwd(), 'ocp_paths', 'pf_1.0')
         solution_directory = join(getcwd(), 'ocp_paths', save_dir)
         cost_directory = join(getcwd(), 'pareto_front', save_dir)
         pareto_load_plot(cost_dir=cost_directory,
-                         solution_dir=solution_directory
+                         solution_dir=solution_directory,
+                         local=(argv[2][-1]=='l')
                          )
     elif argv[1] == '-c': # -c for cost evaluation of a single solution
         soln_dir=argv[2]
