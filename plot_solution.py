@@ -76,6 +76,7 @@ def plot_solution(station=False, mockup=False, soln_dir='thrust_test_k_1_p_1_f_1
         X = np.loadtxt(join(getcwd(), 'ocp_paths', soln_dir, '1.5m_X_' + thrust_str + '.csv'), delimiter=' ')
         U = np.loadtxt(join(getcwd(), 'ocp_paths', soln_dir, '1.5m_U_' + thrust_str + '.csv'), delimiter=' ')
         t = np.loadtxt(join(getcwd(), 'ocp_paths', soln_dir, '1.5m_t_' + thrust_str + '.csv'), delimiter=' ')
+        soln_file = '1.5m_' + thrust_str
     else:
         X = np.loadtxt(soln_file + '_X.csv', delimiter=' ')
         U = np.loadtxt(soln_file + '_U.csv', delimiter=' ')
@@ -101,27 +102,28 @@ def plot_solution(station=False, mockup=False, soln_dir='thrust_test_k_1_p_1_f_1
     ax.set_ylabel('Thrust Magnitude')
     ax.set_title('Thrust Magnitude, Duration = ' + str(t[-1])[:6] + 's')
 
-    # plot fig
-    plt.show()
+    # # plot fig
+    # plt.show()
 
-    # # savefig
-    # savefile = os.path.basename(os.path.normpath(soln_file))
-    # # print('saving: ', savepath)
-    # # figure.savefig(savepath, dpi=1000)
+    # savefig
+    savefile = os.path.basename(os.path.normpath(soln_file))
+    save_dpi = 300
+    # print('saving: ', savepath)
+    # figure.savefig(savepath, dpi=1000)
 
-    # view_num = 0
-    # ax.view_init(elev=30, azim=30)
-    # plt.savefig(os.path.join(getcwd(), 'path_figures', + str(view_num) + '.png'), dpi=save_dpi)
+    view_num = 0
+    ax.view_init(elev=30, azim=30)
+    plt.savefig(os.path.join(getcwd(), 'path_figures', savefile + str(view_num) + '.png'), dpi=save_dpi)
 
-    # # view from underneath
-    # ax.view_init(elev=-30, azim=30)
-    # view_num += 1
-    # plt.savefig(os.path.join(save_path, figname + str(view_num) + '.png'), dpi=save_dpi)
+    # view from underneath
+    ax.view_init(elev=-30, azim=30)
+    view_num += 1
+    plt.savefig(os.path.join(getcwd(), 'path_figures', savefile + str(view_num) + '.png'), dpi=save_dpi)
 
-    # # rotate around
-    # ax.view_init(elev=30, azim=120)
-    # view_num += 1
-    # plt.savefig(os.path.join(save_path, figname + str(view_num) + '.png'), dpi=save_dpi)
+    # rotate around
+    ax.view_init(elev=30, azim=120)
+    view_num += 1
+    plt.savefig(os.path.join(getcwd(), 'path_figures', savefile + str(view_num) + '.png'), dpi=save_dpi)
 
 if __name__ == '__main__':
     # python plot_solution.py 0.2 1 1 1
