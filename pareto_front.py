@@ -451,9 +451,10 @@ def generate_pareto_front(knotfile=join(getcwd(), 'ccp_paths', '1.5m_local_50.38
 
 def objectives_all_distances():
     """
-    compute the objectives of coverage, knot ocst, and fuel cost for all final paths (distances and locality)
+    compute the objectives of coverage, knot cost, and fuel cost for all final paths (distances and locality)
     """
     soln_dir_in = 'all_ccp'
+    print('algorithm, view_distance, fuel_cost, knot_cost, coverage')
     for d_int in range(0, 9):
         d = (d_int+1)/2  # 0 1 2 ... 8 --> 0.5 1.0 2.5 ... 4.5
         soln_file_in = str(d) + 'm'

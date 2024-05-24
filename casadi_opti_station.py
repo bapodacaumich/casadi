@@ -69,6 +69,8 @@ def ocp_station_knot(meshdir=join(getcwd(), 'model', 'convex_detailed_station'),
 
     path = np.loadtxt(knotfile, delimiter=',') # (N, 6)
     knots = filter_path_na(path) # get rid of configurations with nans
+    start = knots[0,:3] # get initial position
+    knots = knots[1:,:]
 
     velocity = 0.2
     n_timesteps = 400
@@ -99,6 +101,9 @@ def ocp_station_knot(meshdir=join(getcwd(), 'model', 'convex_detailed_station'),
     ## constrain dynamics
     # print('Constraining Dynamics...', flush=True)
     integrate_runge_kutta(X, U, dt, f, opti)
+
+    ## constrain start pose
+    opti.subject_to(sumsqr(X[0,:3].T - start) <= 5e-1)
 
     ## constrain thrust limits
     # print('Imposing Thrust Limits...', flush=True)
