@@ -64,7 +64,7 @@ def plot_solution(station=False, mockup=False, soln_dir='thrust_test_k_1_p_1_f_1
             # Auto scale to the mesh size
             scale = np.concatenate((scale, your_mesh.points.flatten()))
 
-    axes.auto_scale_xyz(scale, scale, scale)
+    # axes.auto_scale_xyz(scale, scale, scale)
 
     # plot knot points
     axes.plot(knots[:,0], knots[:,1], knots[:,2],'k--')

@@ -61,12 +61,10 @@ def generate_soln_parallel(thrust_limit=1.0,
                 arg_list.append(args)
         else: print('skipping: ', soln_path)
 
-    print('ARG LIST: ')
-    for arg in arg_list:
-        print(arg)
 
     # run sequentially (one process at a time)
     for arg in arg_list:
+        print('Current Process: ', arg)
         ocp_parallel(arg)
     # run in parallel
     # with Pool(num_processes) as p:
