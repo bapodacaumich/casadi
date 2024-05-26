@@ -31,7 +31,7 @@ def plot_solution(station=False, mockup=False, soln_dir='thrust_test_k_1_p_1_f_1
     translation = np.loadtxt('translate_station.txt', delimiter=',').reshape(1,1,3)
 
     # Create a new plot
-    figure = plt.figure()
+    figure = plt.figure(figsize=(12,10))
     axes = figure.add_subplot(projection='3d')
     # axes = mplot3d.Axes3D(figure)
 
@@ -64,7 +64,7 @@ def plot_solution(station=False, mockup=False, soln_dir='thrust_test_k_1_p_1_f_1
             # Auto scale to the mesh size
             scale = np.concatenate((scale, your_mesh.points.flatten()))
 
-    axes.auto_scale_xyz(scale, scale, scale)
+    # axes.auto_scale_xyz(scale, scale, scale)
 
     # plot knot points
     axes.plot(knots[:,0], knots[:,1], knots[:,2],'k--')
@@ -86,8 +86,12 @@ def plot_solution(station=False, mockup=False, soln_dir='thrust_test_k_1_p_1_f_1
     axes.plot(X[:,0], X[:,1], X[:,2], 'k-')
     qs = 1
     s = 5 # scale factor
+    U_scale = []
+    for i in range(U.shape[0]):
+        U_scale.append(U[i,:]*(t[i+1]-t[i]))
+    U_scale = np.array(U_scale)
     axes.quiver(X[:-1:qs,0],X[:-1:qs,1],X[:-1:qs,2],
-                s*U[::qs,0],s*U[::qs,1],s*U[::qs,2],
+                s*U_scale[::qs,0],s*U_scale[::qs,1],s*U_scale[::qs,2],
                 color='tab:red',
                 label='Thrust')
 
@@ -96,34 +100,53 @@ def plot_solution(station=False, mockup=False, soln_dir='thrust_test_k_1_p_1_f_1
     axes.set_ylabel('Y Axis')
     axes.set_zlabel('Z Axis')
 
-    fig, ax = plt.subplots()
-    ax.plot(t[:-1], np.sqrt(np.sum(U**2, axis=1)))
-    ax.set_xlabel('Time (s)')
-    ax.set_ylabel('Thrust Magnitude')
-    ax.set_title('Thrust Magnitude, Duration = ' + str(t[-1])[:6] + 's')
+    # fig, ax = plt.subplots()
+    # ax.plot(t[:-1], np.sqrt(np.sum(U**2, axis=1)))
+    # ax.set_xlabel('Time (s)')
+    # ax.set_ylabel('Thrust Magnitude')
+    # ax.set_title('Thrust Magnitude, Duration = ' + str(t[-1])[:6] + 's')
+
+    # set limits
+    xmin = np.min(X[:,0])
+    xmax = np.max(X[:,0])
+    ymin = np.min(X[:,1])
+    ymax = np.max(X[:,1])
+    zmin = np.min(X[:,2])
+    zmax = np.max(X[:,2])
+
+    axes.set_xlim([xmin, xmax])
+    axes.set_ylim([ymin, ymax])
+    axes.set_zlim([zmin, zmax])
+
+    # get aspect ratios
+    xlim = axes.get_xlim()
+    ylim = axes.get_ylim()
+    zlim = axes.get_zlim()
+    axes.set_box_aspect([xlim[1]-xlim[0], ylim[1]-ylim[0], zlim[1]-zlim[0]])
 
     # # plot fig
     # plt.show()
 
     # savefig
     savefile = os.path.basename(os.path.normpath(soln_file))
-    save_dpi = 300
+    save_dpi = 600
     # print('saving: ', savepath)
     # figure.savefig(savepath, dpi=1000)
 
     view_num = 0
-    ax.view_init(elev=30, azim=30)
+    axes.view_init(elev=30, azim=30)
     plt.savefig(os.path.join(getcwd(), 'path_figures', savefile + str(view_num) + '.png'), dpi=save_dpi)
 
     # view from underneath
-    ax.view_init(elev=-30, azim=30)
+    axes.view_init(elev=-30, azim=30)
     view_num += 1
     plt.savefig(os.path.join(getcwd(), 'path_figures', savefile + str(view_num) + '.png'), dpi=save_dpi)
 
     # rotate around
-    ax.view_init(elev=30, azim=120)
+    axes.view_init(elev=30, azim=150)
     view_num += 1
     plt.savefig(os.path.join(getcwd(), 'path_figures', savefile + str(view_num) + '.png'), dpi=save_dpi)
+    plt.show()
 
 if __name__ == '__main__':
     # python plot_solution.py 0.2 1 1 1
