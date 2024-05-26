@@ -103,7 +103,7 @@ def ocp_station_knot(meshdir=join(getcwd(), 'model', 'convex_detailed_station'),
     integrate_runge_kutta(X, U, dt, f, opti)
 
     ## constrain start pose
-    opti.subject_to(sumsqr(X[0,:3].T - start) <= 5e-1)
+    opti.subject_to(sumsqr(X[0,:3].T - start) <= 1.0)
 
     ## constrain thrust limits
     # print('Imposing Thrust Limits...', flush=True)
