@@ -60,8 +60,8 @@ def generate_soln_parallel(thrust_limit=1.0,
         #     # if file[:4] == '4.5m' or file[:4] == '0.5m':
         #     arg_list.append(args)
         # else: print('skipping: ', soln_path)
-        if file[:4] == '0.5m' and not input_local:
-            arg_list.append(args)
+        # if file[:4] == '0.5m' and not input_local:
+        arg_list.append(args)
 
 
     # run sequentially (one process at a time)
