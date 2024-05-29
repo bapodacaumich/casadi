@@ -52,14 +52,16 @@ def generate_soln_parallel(thrust_limit=1.0,
                     input_local
                     )
 
-        if input_local:
-            soln_path = join(save_dir, file[:4] + '_local_X.csv') 
-        else:
-            soln_path = join(save_dir, file[:4] + '_X.csv')
-        if not exists(soln_path):
-            if file[:4] == '4.5m' or file[:4] == '0.5m':
-                arg_list.append(args)
-        else: print('skipping: ', soln_path)
+        # if input_local:
+        #     soln_path = join(save_dir, file[:4] + '_local_X.csv') 
+        # else:
+        #     soln_path = join(save_dir, file[:4] + '_X.csv')
+        # if not exists(soln_path):
+        #     # if file[:4] == '4.5m' or file[:4] == '0.5m':
+        #     arg_list.append(args)
+        # else: print('skipping: ', soln_path)
+        if file[:4] == '0.5m' and not input_local:
+            arg_list.append(args)
 
 
     # run sequentially (one process at a time)
@@ -78,5 +80,5 @@ if __name__ == "__main__":
                            knot_weight_global=10,
                            fuel_weight_global=10,
                            path_weight=0.1,
-                           save_dir=join(getcwd(), 'ocp_paths', save_folder)
+                           save_dir=join(getcwd(), 'debug', save_folder)
                            )
