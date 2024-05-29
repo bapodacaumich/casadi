@@ -3,7 +3,7 @@ from os import getcwd, listdir
 from os.path import join
 from stl import mesh
 from mpl_toolkits import mplot3d
-from utils import filter_path_na
+from utils import filter_path_na, set_aspect_equal_3d
 import matplotlib.pyplot as plt
 from mpl_toolkits.mplot3d import Axes3D
 from numpy.linalg import norm
@@ -72,6 +72,24 @@ def plot_path(axes, X, U, s=5, qs=1):
     axes.set_zlabel('Z Axis')
     return axes
 
+def plot_two_solutions(soln_dir1, soln_dir2, distance='1.5m', local=False):
+    figure, axes = plot_station()
+    axes = plot_knotpoints(axes, distance, local)
+
+    X1 = np.loadtxt(soln_dir1 + '_X.csv', delimiter=' ')
+    U1 = np.loadtxt(soln_dir1 + '_U.csv', delimiter=' ')
+    t1 = np.loadtxt(soln_dir1 + '_t.csv', delimiter=' ')
+
+    X2 = np.loadtxt(soln_dir2 + '_X.csv', delimiter=' ')
+    U2 = np.loadtxt(soln_dir2 + '_U.csv', delimiter=' ')
+    t2 = np.loadtxt(soln_dir2 + '_t.csv', delimiter=' ')
+
+    axes = plot_path(axes, X1, U1)
+    axes = plot_path(axes, X2, U2)
+    axes = set_aspect_equal_3d(axes)
+
+    plt.show()
+
 def plot_solution(soln_dir='thrust_test_k_1_p_1_f_1', soln_file=None, thrust_limit=0.2, local=False, distance='1.5m'):
     figure, axes = plot_station()
     axes = plot_knotpoints(axes, distance, local)
@@ -128,7 +146,10 @@ if __name__ == '__main__':
 
     elif argv[1] == '-c':
         # compare two paths
-        path1 = join(getcwd(), 'debug', 'all_ccp', )
+        dist = '0.5m'
+        path1 = join(getcwd(), 'debug', 'all_ccp', dist)
+        path2 = join(getcwd(), 'debug', 'all_ccp_compare', dist)
+        plot_two_solutions(path1, path2, dist)
     else:
         if len(argv) > 1: thrust_input = float(argv[1])
         else: thrust_input = 0.2 # float

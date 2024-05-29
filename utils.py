@@ -18,6 +18,8 @@ def set_aspect_equal_3d(axes):
     zlim = axes.get_zlim()
     axes.set_box_aspect([xlim[1]-xlim[0], ylim[1]-ylim[0], zlim[1]-zlim[0]])
 
+    return axes
+
 def load_path_data(sol_dir=join(getcwd(), 'ocp_paths', 'thrust_test_k_100_p_0_1_f_1'),
                    knot_file=join(getcwd(), 'ccp_paths', '1.5m43.662200005359864.csv')):
     """
