@@ -10,23 +10,7 @@ from numpy.linalg import norm
 import numpy as np
 from sys import argv
 
-
-def plot_solution(station=False, mockup=False, soln_dir='thrust_test_k_1_p_1_f_1', soln_file=None, thrust_limit=0.2, local=False, distance='1.5m'):
-    if station:
-        for file in listdir(join(getcwd(), 'ccp_paths')):
-            if (distance == file[:4]):
-                if not ((file[5] == 'l') ^ local):
-                    knotfile=join(getcwd(), 'ccp_paths', file)
-        # knotfile=join(getcwd(), 'ccp_paths', '1.5m43.662200005359864.csv')
-        # load knot points
-        path = np.loadtxt(knotfile, delimiter=',') # (N, 6)
-        knots = filter_path_na(path) # get rid of configurations with nans
-    if mockup: 
-        knots = np.array([[1.0, -1.0, 0.5],
-                            [1.0, 1.0, 0.5],
-                            [-1.0, 1.0, 0.5],
-                            [-1.0, -1.0, 0.5]])
-
+def plot_station():
     # load station offset
     translation = np.loadtxt('translate_station.txt', delimiter=',').reshape(1,1,3)
 
@@ -35,40 +19,62 @@ def plot_solution(station=False, mockup=False, soln_dir='thrust_test_k_1_p_1_f_1
     axes = figure.add_subplot(projection='3d')
     # axes = mplot3d.Axes3D(figure)
 
-    scale = np.array([0])
-    if station:
-        for i in range(15):
-            meshfile = join(getcwd(), 'model', 'convex_detailed_station', str(i) + '.stl')
+    for i in range(15):
+        meshfile = join(getcwd(), 'model', 'convex_detailed_station', str(i) + '.stl')
 
-            # Load the STL files and add the vectors to the plot
-            your_mesh = mesh.Mesh.from_file(meshfile)
-            vectors = your_mesh.vectors + translation
-            axes.add_collection3d(mplot3d.art3d.Poly3DCollection(vectors))
-            wf = vectors.reshape(-1, 3)
-            axes.plot(wf[:,0], wf[:,1], wf[:,2], 'k')
+        # Load the STL files and add the vectors to the plot
+        your_mesh = mesh.Mesh.from_file(meshfile)
+        vectors = your_mesh.vectors + translation
+        axes.add_collection3d(mplot3d.art3d.Poly3DCollection(vectors))
+        wf = vectors.reshape(-1, 3)
+        axes.plot(wf[:,0], wf[:,1], wf[:,2], 'k')
 
-            # Auto scale to the mesh size
-            scale = np.concatenate((scale, your_mesh.points.flatten()))
-    elif mockup:
-        files = ['apollo_convex.stl', 'gemini_convex.stl', 'mercury_convex.stl', 'solar_convex.stl']
-        for f in files:
-            meshfile = join(getcwd(), 'model', 'mockup', f)
+    return figure, axes
 
-            # Load the STL files and add the vectors to the plot
-            your_mesh = mesh.Mesh.from_file(meshfile)
-            vectors = your_mesh.vectors
-            axes.add_collection3d(mplot3d.art3d.Poly3DCollection(vectors))
-            wf = vectors.reshape(-1, 3)
-            axes.plot(wf[:,0], wf[:,1], wf[:,2], 'k')
-
-            # Auto scale to the mesh size
-            scale = np.concatenate((scale, your_mesh.points.flatten()))
-
-    # axes.auto_scale_xyz(scale, scale, scale)
+def plot_knotpoints(axes, distance, local):
+    for file in listdir(join(getcwd(), 'ccp_paths')):
+        if (distance == file[:4]):
+            if not ((file[5] == 'l') ^ local):
+                knotfile=join(getcwd(), 'ccp_paths', file)
+    # knotfile=join(getcwd(), 'ccp_paths', '1.5m43.662200005359864.csv')
+    # load knot points
+    path = np.loadtxt(knotfile, delimiter=',') # (N, 6)
+    knots = filter_path_na(path) # get rid of configurations with nans
 
     # plot knot points
     axes.plot(knots[:,0], knots[:,1], knots[:,2],'k--')
     axes.scatter(knots[:,0], knots[:,1], knots[:,2])
+    return axes
+
+def plot_path(axes, X, U, s=5, qs=1):
+    """plot path on 3d axes
+
+    Args:
+        axes (matplotlib.axes): matplotlib 3d axes
+        X (np.array): path points (N, 6)
+        U (np.array): action steps (N, 3)
+        s (int, optional): action quiver arrow length. Defaults to 5.
+        qs (int, optional): quiver sparsity (steps to skip between arrows). Defaults to 1.
+
+    Returns:
+        axes (matplotlib.axes): matplotlib axes object
+    """
+    # plot path
+    axes.plot(X[:,0], X[:,1], X[:,2], 'k-')
+    axes.quiver(X[:-1:qs,0],X[:-1:qs,1],X[:-1:qs,2],
+                s*U[::qs,0],s*U[::qs,1],s*U[::qs,2],
+                color='tab:red',
+                label='Thrust')
+
+    # axis labels
+    axes.set_xlabel('X Axis')
+    axes.set_ylabel('Y Axis')
+    axes.set_zlabel('Z Axis')
+    return axes
+
+def plot_solution(soln_dir='thrust_test_k_1_p_1_f_1', soln_file=None, thrust_limit=0.2, local=False, distance='1.5m'):
+    figure, axes = plot_station()
+    axes = plot_knotpoints(axes, distance, local)
 
     # # load path
     if soln_file is None:
@@ -82,29 +88,7 @@ def plot_solution(station=False, mockup=False, soln_dir='thrust_test_k_1_p_1_f_1
         U = np.loadtxt(soln_file + '_U.csv', delimiter=' ')
         t = np.loadtxt(soln_file + '_t.csv', delimiter=' ')
 
-    # plot path
-    axes.plot(X[:,0], X[:,1], X[:,2], 'k-')
-    qs = 1
-    s = 5 # scale factor
-    axes.quiver(X[:-1:qs,0],X[:-1:qs,1],X[:-1:qs,2],
-                s*U[::qs,0],s*U[::qs,1],s*U[::qs,2],
-                color='tab:red',
-                label='Thrust')
-
-    # axis labels
-    axes.set_xlabel('X Axis')
-    axes.set_ylabel('Y Axis')
-    axes.set_zlabel('Z Axis')
-
-    fig, ax = plt.subplots()
-    ax.plot(t[:-1], np.sqrt(np.sum(U**2, axis=1)))
-    ax.set_xlabel('Time (s)')
-    ax.set_ylabel('Thrust Magnitude')
-    ax.set_title('Thrust Magnitude, Duration = ' + str(t[-1])[:6] + 's')
-
-    # # plot fig
-    # plt.show()
-
+    axes = plot_path(axes, X, U)
     # savefig
     savefile = os.path.basename(os.path.normpath(soln_file))
     save_dpi = 300
@@ -121,7 +105,7 @@ def plot_solution(station=False, mockup=False, soln_dir='thrust_test_k_1_p_1_f_1
     plt.savefig(os.path.join(getcwd(), 'path_figures', savefile + str(view_num) + '.png'), dpi=save_dpi)
 
     # rotate around
-    ax.view_init(elev=30, azim=120)
+    ax.view_init(elev=30, azim=150)
     view_num += 1
     plt.savefig(os.path.join(getcwd(), 'path_figures', savefile + str(view_num) + '.png'), dpi=save_dpi)
 
@@ -140,6 +124,10 @@ if __name__ == '__main__':
         if len(argv) > 4: distance_input = argv[4]
         else: distance_input = '1.5m'
         plot_solution(station=True, thrust_limit=1.0, soln_file=soln_file_input, distance=distance_input, local=False)
+
+    elif argv[1] == '-c':
+        # compare two paths
+        path1 = join(getcwd(), 'debug', 'all_ccp', )
     else:
         if len(argv) > 1: thrust_input = float(argv[1])
         else: thrust_input = 0.2 # float
