@@ -108,24 +108,24 @@ def plot_solution(soln_dir='thrust_test_k_1_p_1_f_1', soln_file=None, thrust_lim
 
     axes = plot_path(axes, X, U)
     # savefig
-    savefile = os.path.basename(os.path.normpath(soln_file))
-    save_dpi = 600
-    # print('saving: ', savepath)
-    # figure.savefig(savepath, dpi=1000)
+    # savefile = os.path.basename(os.path.normpath(soln_file))
+    # save_dpi = 600
+    # # print('saving: ', savepath)
+    # # figure.savefig(savepath, dpi=1000)
 
-    view_num = 0
-    axes.view_init(elev=30, azim=30)
-    plt.savefig(os.path.join(getcwd(), 'path_figures', savefile + str(view_num) + '.png'), dpi=save_dpi)
+    # view_num = 0
+    # axes.view_init(elev=30, azim=30)
+    # plt.savefig(os.path.join(getcwd(), 'path_figures', savefile + str(view_num) + '.png'), dpi=save_dpi)
 
-    # view from underneath
-    axes.view_init(elev=-30, azim=30)
-    view_num += 1
-    plt.savefig(os.path.join(getcwd(), 'path_figures', savefile + str(view_num) + '.png'), dpi=save_dpi)
+    # # view from underneath
+    # axes.view_init(elev=-30, azim=30)
+    # view_num += 1
+    # plt.savefig(os.path.join(getcwd(), 'path_figures', savefile + str(view_num) + '.png'), dpi=save_dpi)
 
-    # rotate around
-    axes.view_init(elev=30, azim=150)
-    view_num += 1
-    plt.savefig(os.path.join(getcwd(), 'path_figures', savefile + str(view_num) + '.png'), dpi=save_dpi)
+    # # rotate around
+    # axes.view_init(elev=30, azim=150)
+    # view_num += 1
+    # plt.savefig(os.path.join(getcwd(), 'path_figures', savefile + str(view_num) + '.png'), dpi=save_dpi)
     plt.show()
 
 if __name__ == '__main__':
