@@ -1,5 +1,5 @@
 from casadi_opti_station import ocp_parallel
-from os.path import join
+from os.path import join, exists
 from os import getcwd, listdir
 from sys import argv
 from utils import num2str
@@ -52,18 +52,33 @@ def generate_soln_parallel(thrust_limit=1.0,
                     input_local
                     )
 
+        # if input_local:
+        #     soln_path = join(save_dir, file[:4] + '_local_X.csv') 
+        # else:
+        #     soln_path = join(save_dir, file[:4] + '_X.csv')
+        # if not exists(soln_path):
+        #     # if file[:4] == '4.5m' or file[:4] == '0.5m':
+        #     arg_list.append(args)
+        # else: print('skipping: ', soln_path)
+        # if file[:4] == '0.5m' and not input_local:
         arg_list.append(args)
 
-    with Pool(num_processes) as p:
-        r = list(p.imap(ocp_parallel, arg_list))
+
+    # run sequentially (one process at a time)
+    for arg in arg_list:
+        print('Current Process: ', arg)
+        ocp_parallel(arg)
+    # run in parallel
+    # with Pool(num_processes) as p:
+    #     r = list(p.imap(ocp_parallel, arg_list))
 
 if __name__ == "__main__":
-    save_folder='all_ccp'
+    save_folder='all_ccp_compare'
     generate_soln_parallel(thrust_limit=1.0,
                            knot_weight_local=100,
                            fuel_weight_local=1,
                            knot_weight_global=10,
                            fuel_weight_global=10,
                            path_weight=0.1,
-                           save_dir=join(getcwd(), 'ocp_paths', save_folder)
+                           save_dir=join(getcwd(), 'debug', save_folder)
                            )

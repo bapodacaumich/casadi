@@ -11,6 +11,15 @@ from os import getcwd, listdir
 from os.path import join
 from tqdm import tqdm
 
+def set_aspect_equal_3d(axes):
+    # get aspect ratios
+    xlim = axes.get_xlim()
+    ylim = axes.get_ylim()
+    zlim = axes.get_zlim()
+    axes.set_box_aspect([xlim[1]-xlim[0], ylim[1]-ylim[0], zlim[1]-zlim[0]])
+
+    return axes
+
 def load_path_data(sol_dir=join(getcwd(), 'ocp_paths', 'thrust_test_k_100_p_0_1_f_1'),
                    knot_file=join(getcwd(), 'ccp_paths', '1.5m43.662200005359864.csv')):
     """
@@ -201,7 +210,7 @@ def filter_path_na(path):
     knot_bool = ~isnan(path)[:,-1]
     return path[knot_bool,:]
 
-def compute_time_intervals(knots, velocity, num_timesteps):
+def compute_time_intervals(knots, velocity, num_timesteps, start_pose=None):
     """
     compute time intervals for optimal control path given a velocity and path knot points
     knot_idx - index of state variable for knot point enforcement
