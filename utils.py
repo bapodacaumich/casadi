@@ -210,7 +210,7 @@ def filter_path_na(path):
     knot_bool = ~isnan(path)[:,-1]
     return path[knot_bool,:]
 
-def compute_time_intervals(knots, velocity, num_timesteps):
+def compute_time_intervals(knots, velocity, num_timesteps, start_pose=None):
     """
     compute time intervals for optimal control path given a velocity and path knot points
     knot_idx - index of state variable for knot point enforcement

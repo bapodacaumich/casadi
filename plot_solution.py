@@ -146,7 +146,10 @@ if __name__ == '__main__':
 
     elif argv[1] == '-c':
         # compare two paths
-        dist = '0.5m'
+        if len(argv) > 2: 
+            dist = argv[2]
+        else:
+            dist = '0.5m'
         path1 = join(getcwd(), 'debug', 'all_ccp', dist)
         path2 = join(getcwd(), 'debug', 'all_ccp_compare', dist)
         plot_two_solutions(path1, path2, dist)

@@ -151,13 +151,16 @@ def compute_knot_cost(X, knots, knot_idx, closest=False):
     if closest:
         last_idx = 0
         knot_cost = 0
-        for ki in range(len(knot_idx)-1):
+        for ki in range(len(knot_idx)):
             closest_dist = np.Inf
-            next_idx = (knot_idx[ki] + knot_idx[ki+1])//2+1
+            if ki == len(knot_idx)-1:
+                next_idx = X.shape[0]-1
+            else:
+                next_idx = (knot_idx[ki] + knot_idx[ki+1])//2+1
             for idx in range(last_idx, next_idx):
                 dist = sumsqr(knots[[ki], :3] - X[[idx], :3]) # compare state, look at reshape
                 closest_dist = fmin(closest_dist, dist)
-            knot_cost += closest_dist
+            if ki != 0: knot_cost += closest_dist # first knot is the start pose -- already enforcing this elsewhere
             last_idx = next_idx
     else: knot_cost = sumsqr(X[knot_idx, :3] - knots[:, :3])
 
