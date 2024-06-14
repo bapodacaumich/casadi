@@ -11,6 +11,16 @@ from os import getcwd, listdir
 from os.path import join
 from tqdm import tqdm
 
+def load_knots(view_distance, local):
+    for file in listdir(join(getcwd(), 'ccp_paths')):
+        if str(view_distance) == file[:4]:
+            if ((file[5] == 'l') and local) or ((file[5] != 'l') and not local):
+                knotfile=join(getcwd(), 'ccp_paths', file)
+                break
+    print('Importing Knot File: ', knotfile)
+
+    return np.loadtxt(knotfile, delimiter=',') # (N, 6)
+
 def set_aspect_equal_3d(axes):
     # get aspect ratios
     xlim = axes.get_xlim()

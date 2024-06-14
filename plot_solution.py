@@ -3,7 +3,7 @@ from os import getcwd, listdir
 from os.path import join
 from stl import mesh
 from mpl_toolkits import mplot3d
-from utils import filter_path_na, set_aspect_equal_3d
+from utils import filter_path_na, set_aspect_equal_3d, process_data, load_knots
 import matplotlib.pyplot as plt
 from mpl_toolkits.mplot3d import Axes3D
 from numpy.linalg import norm
@@ -46,7 +46,7 @@ def plot_knotpoints(axes, distance, local):
     axes.scatter(knots[:,0], knots[:,1], knots[:,2])
     return axes
 
-def plot_path(axes, X, U, s=5, qs=1, view_direction=False, vs=12):
+def plot_path(axes, X, U, s=5, qs=1, view_direction=False, vs=2):
     """plot path on 3d axes
 
     Args:
@@ -69,9 +69,9 @@ def plot_path(axes, X, U, s=5, qs=1, view_direction=False, vs=12):
     # plot view direction
     if view_direction:
         view_scale = 0.5
-        axes.quiver(X[:,0],X[:,1],X[:,2],
-                    view_scale*U[::vs,0],view_scale*U[::vs,1],view_scale*U[::vs,2],
-                    color='tab:red',
+        axes.quiver(X[::vs,0],X[::vs,1],X[::vs,2],
+                    view_scale*X[::vs,3],view_scale*X[::vs,4],view_scale*X[::vs,5],
+                    color='tab:grey',
                     label='Thrust')
 
     # axis labels
@@ -84,6 +84,11 @@ def plot_two_solutions(soln_dir1, soln_dir2, distance='1.5m', local=False):
     figure, axes = plot_station()
     axes = plot_knotpoints(axes, distance, local)
 
+    # account for local paths
+    if local:
+        soln_dir1 += '_local'
+        soln_dir2 += '_local'
+
     X1 = np.loadtxt(soln_dir1 + '_X.csv', delimiter=' ')
     U1 = np.loadtxt(soln_dir1 + '_U.csv', delimiter=' ')
     t1 = np.loadtxt(soln_dir1 + '_t.csv', delimiter=' ')
@@ -94,13 +99,13 @@ def plot_two_solutions(soln_dir1, soln_dir2, distance='1.5m', local=False):
     t2 = np.loadtxt(soln_dir2 + '_t.csv', delimiter=' ')
     dt2 = np.diff(t2)
 
-    axes = plot_path(axes, X1, U1*dt1.reshape((-1,1)))
-    axes = plot_path(axes, X2, U2*dt2.reshape((-1,1)))
+    axes = plot_path(axes, X1, U1*dt1.reshape((-1,1)), view_direction=True)
+    axes = plot_path(axes, X2, U2*dt2.reshape((-1,1)), view_direction=True)
     axes = set_aspect_equal_3d(axes)
 
     plt.show()
 
-def plot_solution(soln_dir='thrust_test_k_1_p_1_f_1', soln_file=None, thrust_limit=0.2, local=False, distance='1.5m'):
+def plot_solution(soln_dir='thrust_test_k_1_p_1_f_1', soln_file=None, thrust_limit=0.2, local=False, distance='1.5m', processing=True):
     figure, axes = plot_station()
     axes = plot_knotpoints(axes, distance, local)
 
@@ -116,7 +121,12 @@ def plot_solution(soln_dir='thrust_test_k_1_p_1_f_1', soln_file=None, thrust_lim
         U = np.loadtxt(soln_file + '_U.csv', delimiter=' ')
         t = np.loadtxt(soln_file + '_t.csv', delimiter=' ')
 
-    axes = plot_path(axes, X, U)
+    # process to find normals
+    knots = load_knots(distance, local)
+    X = process_data(knots, X, t)
+
+    axes = plot_path(axes, X, U, view_direction=True)
+    axes = set_aspect_equal_3d(axes)
     # savefig
     # savefile = os.path.basename(os.path.normpath(soln_file))
     # save_dpi = 600
@@ -147,12 +157,12 @@ if __name__ == '__main__':
         soln_file_input = join(getcwd(), 'ocp_paths', argv[2])
         if argv[2][-1] == 'l': local_input = True
         else: local_input = False
-        plot_solution(station=True, thrust_limit=1.7, soln_file=soln_file_input, distance=argv[2][:4], local=local_input)
+        plot_solution(thrust_limit=1.7, soln_file=soln_file_input, distance=argv[2][:4], local=local_input)
     elif argv[1] == '-f':
         soln_file_input = join(getcwd(), 'ocp_paths', argv[2], argv[3])
         if len(argv) > 4: distance_input = argv[4]
         else: distance_input = '1.5m'
-        plot_solution(station=True, thrust_limit=1.0, soln_file=soln_file_input, distance=distance_input, local=False)
+        plot_solution(thrust_limit=1.0, soln_file=soln_file_input, distance=distance_input, local=False)
 
     elif argv[1] == '-c':
         # compare two paths
@@ -162,7 +172,7 @@ if __name__ == '__main__':
             dist = '0.5m'
         path1 = join(getcwd(), 'debug', 'all_ccp', dist)
         path2 = join(getcwd(), 'debug', 'all_ccp_compare', dist)
-        plot_two_solutions(path1, path2, dist)
+        plot_two_solutions(path1, path2, dist, local=True)
     else:
         if len(argv) > 1: thrust_input = float(argv[1])
         else: thrust_input = 0.2 # float
