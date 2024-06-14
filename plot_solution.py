@@ -22,21 +22,12 @@ def plot_station():
     for i in range(15):
         meshfile = join(getcwd(), 'model', 'convex_detailed_station', str(i) + '.stl')
 
-<<<<<<< HEAD
-            # Load the STL files and add the vectors to the plot
-            your_mesh = mesh.Mesh.from_file(meshfile)
-            vectors = your_mesh.vectors + translation
-            # axes.add_collection3d(mplot3d.art3d.Poly3DCollection(vectors))
-            wf = vectors.reshape(-1, 3)
-            # axes.plot(wf[:,0], wf[:,1], wf[:,2], 'k')
-=======
         # Load the STL files and add the vectors to the plot
         your_mesh = mesh.Mesh.from_file(meshfile)
         vectors = your_mesh.vectors + translation
         axes.add_collection3d(mplot3d.art3d.Poly3DCollection(vectors))
         wf = vectors.reshape(-1, 3)
         axes.plot(wf[:,0], wf[:,1], wf[:,2], 'k')
->>>>>>> b5c09b9f7dc0062134428f91cc40d279e7bcd527
 
     return figure, axes
 
@@ -88,13 +79,15 @@ def plot_two_solutions(soln_dir1, soln_dir2, distance='1.5m', local=False):
     X1 = np.loadtxt(soln_dir1 + '_X.csv', delimiter=' ')
     U1 = np.loadtxt(soln_dir1 + '_U.csv', delimiter=' ')
     t1 = np.loadtxt(soln_dir1 + '_t.csv', delimiter=' ')
+    dt1 = np.diff(t1)
 
     X2 = np.loadtxt(soln_dir2 + '_X.csv', delimiter=' ')
     U2 = np.loadtxt(soln_dir2 + '_U.csv', delimiter=' ')
     t2 = np.loadtxt(soln_dir2 + '_t.csv', delimiter=' ')
+    dt2 = np.diff(t2)
 
-    axes = plot_path(axes, X1, U1)
-    axes = plot_path(axes, X2, U2)
+    axes = plot_path(axes, X1, U1*dt1.reshape((-1,1)))
+    axes = plot_path(axes, X2, U2*dt2.reshape((-1,1)))
     axes = set_aspect_equal_3d(axes)
 
     plt.show()
@@ -151,9 +144,6 @@ if __name__ == '__main__':
         soln_file_input = join(getcwd(), 'ocp_paths', argv[2], argv[3])
         if len(argv) > 4: distance_input = argv[4]
         else: distance_input = '1.5m'
-<<<<<<< HEAD
-        plot_solution(station=True, thrust_limit=1.0, soln_file=soln_file_input, distance=distance_input, local=True)
-=======
         plot_solution(station=True, thrust_limit=1.0, soln_file=soln_file_input, distance=distance_input, local=False)
 
     elif argv[1] == '-c':
@@ -165,7 +155,6 @@ if __name__ == '__main__':
         path1 = join(getcwd(), 'debug', 'all_ccp', dist)
         path2 = join(getcwd(), 'debug', 'all_ccp_compare', dist)
         plot_two_solutions(path1, path2, dist)
->>>>>>> b5c09b9f7dc0062134428f91cc40d279e7bcd527
     else:
         if len(argv) > 1: thrust_input = float(argv[1])
         else: thrust_input = 0.2 # float
