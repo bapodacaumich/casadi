@@ -200,15 +200,3 @@ if __name__ == "__main__":
 
     if len(argv) > 7: save_dir_input = join(getcwd(), 'ocp_paths', argv[7])
     else: save_dir_input=join(getcwd(), 'ocp_paths', 'default')
-
-    # save_dir_input = 'thrust_test_k_' + k_str + '_p_' + p_str + '_f_' + f_str
-
-    ocp_station_knot(save_folder=save_dir_input, view_distance=view_distance, local=local_input, thrust_limit=thrust_limit_input, k_weight=knot_cost_weight, p_weight=path_cost_weight, f_weight=fuel_cost_weight)
-
-    # old parsing code
-    # if str(knot_cost_weight)[-1] == '0': k_str = str(knot_cost_weight)[:-2]
-    # else: k_str = str(knot_cost_weight)[:-2] + '_' + str(knot_cost_weight)[-1]
-    # if str(path_cost_weight)[-1] == '0': p_str = str(path_cost_weight)[:-2]
-    # else: p_str = str(path_cost_weight)[:-2] + '_' + str(path_cost_weight)[-1]
-    # if str(fuel_cost_weight)[-1] == '0': f_str = str(fuel_cost_weight)[:-2]
-    # else: f_str = str(fuel_cost_weight)[:-2] + '_' + str(fuel_cost_weight)[-1]

@@ -46,7 +46,7 @@ def plot_knotpoints(axes, distance, local):
     axes.scatter(knots[:,0], knots[:,1], knots[:,2])
     return axes
 
-def plot_path(axes, X, U, s=5, qs=1):
+def plot_path(axes, X, U, s=5, qs=1, view_direction=False, vs=12):
     """plot path on 3d axes
 
     Args:
@@ -65,6 +65,14 @@ def plot_path(axes, X, U, s=5, qs=1):
                 s*U[::qs,0],s*U[::qs,1],s*U[::qs,2],
                 color='tab:red',
                 label='Thrust')
+
+    # plot view direction
+    if view_direction:
+        view_scale = 0.5
+        axes.quiver(X[:,0],X[:,1],X[:,2],
+                    view_scale*U[::vs,0],view_scale*U[::vs,1],view_scale*U[::vs,2],
+                    color='tab:red',
+                    label='Thrust')
 
     # axis labels
     axes.set_xlabel('X Axis')
