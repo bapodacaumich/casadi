@@ -306,7 +306,7 @@ def compute_cost_single_soln(knotfile=join(getcwd(), 'ccp_paths', '1.5m43.662200
         # print('Weights and costs: Knot = ', knot_weight, '| Fuel = ', fuel_weight, ' | Fuel Cost: ', fuel_cost, ' | Knot Cost: ', knot_cost, ' Coverage (%): ', coverage_ratio*100)
         if len(soln_file) == 4: print('global,', soln_file, ',', fuel_cost, ',', knot_cost, ',', coverage_ratio)
         else: print('local,', soln_file[:4], ',', fuel_cost, ',', knot_cost, ',', coverage_ratio)
-    else: pass # print('File missing: ', file_path)
+    else: print('File missing: ', file_path)
 
 def generate_pareto_front_grid(
     knotfile=join(getcwd(), 'ccp_paths', '1.5m_local_50.38125797314672.csv'),

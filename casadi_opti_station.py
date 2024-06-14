@@ -70,9 +70,9 @@ def ocp_station_knot(meshdir=join(getcwd(), 'model', 'convex_detailed_station'),
     path = np.loadtxt(knotfile, delimiter=',') # (N, 6)
     knots = filter_path_na(path) # get rid of configurations with nans
     # start = knots[0,:3] # get initial position
-    start = np.array([3.612528670355564575e+00, 3.042083095989697394e+00, 3.794209791471474524e+00])
+    start = np.array([2,3,4.2])
 
-    knots = knots[1:,:]
+    knots[0,:3] = start
 
     velocity = 0.2
     n_timesteps = 400
@@ -105,7 +105,8 @@ def ocp_station_knot(meshdir=join(getcwd(), 'model', 'convex_detailed_station'),
     integrate_runge_kutta(X, U, dt, f, opti)
 
     ## constrain start pose
-    # opti.subject_to(sumsqr(X[0,:3].T - start) <= 1e-9)
+    min_start_distance = 0.1
+    opti.subject_to(sumsqr(X[0,:3].T - knots[0,:3]) <= min_start_distance**2)
 
     ## constrain thrust limits
     # print('Imposing Thrust Limits...', flush=True)
@@ -199,15 +200,3 @@ if __name__ == "__main__":
 
     if len(argv) > 7: save_dir_input = join(getcwd(), 'ocp_paths', argv[7])
     else: save_dir_input=join(getcwd(), 'ocp_paths', 'default')
-
-    # save_dir_input = 'thrust_test_k_' + k_str + '_p_' + p_str + '_f_' + f_str
-
-    ocp_station_knot(save_folder=save_dir_input, view_distance=view_distance, local=local_input, thrust_limit=thrust_limit_input, k_weight=knot_cost_weight, p_weight=path_cost_weight, f_weight=fuel_cost_weight)
-
-    # old parsing code
-    # if str(knot_cost_weight)[-1] == '0': k_str = str(knot_cost_weight)[:-2]
-    # else: k_str = str(knot_cost_weight)[:-2] + '_' + str(knot_cost_weight)[-1]
-    # if str(path_cost_weight)[-1] == '0': p_str = str(path_cost_weight)[:-2]
-    # else: p_str = str(path_cost_weight)[:-2] + '_' + str(path_cost_weight)[-1]
-    # if str(fuel_cost_weight)[-1] == '0': f_str = str(fuel_cost_weight)[:-2]
-    # else: f_str = str(fuel_cost_weight)[:-2] + '_' + str(fuel_cost_weight)[-1]

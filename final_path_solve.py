@@ -73,7 +73,7 @@ def generate_soln_parallel(thrust_limit=1.0,
     #     r = list(p.imap(ocp_parallel, arg_list))
 
 if __name__ == "__main__":
-    save_folder='all_ccp'
+    save_folder='all_ccp_compare'
     generate_soln_parallel(thrust_limit=1.0,
                            knot_weight_local=100,
                            fuel_weight_local=1,

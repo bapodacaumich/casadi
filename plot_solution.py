@@ -46,7 +46,7 @@ def plot_knotpoints(axes, distance, local):
     axes.scatter(knots[:,0], knots[:,1], knots[:,2])
     return axes
 
-def plot_path(axes, X, U, s=5, qs=1):
+def plot_path(axes, X, U, s=5, qs=1, view_direction=False, vs=12):
     """plot path on 3d axes
 
     Args:
@@ -66,6 +66,14 @@ def plot_path(axes, X, U, s=5, qs=1):
                 color='tab:red',
                 label='Thrust')
 
+    # plot view direction
+    if view_direction:
+        view_scale = 0.5
+        axes.quiver(X[:,0],X[:,1],X[:,2],
+                    view_scale*U[::vs,0],view_scale*U[::vs,1],view_scale*U[::vs,2],
+                    color='tab:red',
+                    label='Thrust')
+
     # axis labels
     axes.set_xlabel('X Axis')
     axes.set_ylabel('Y Axis')
@@ -79,13 +87,15 @@ def plot_two_solutions(soln_dir1, soln_dir2, distance='1.5m', local=False):
     X1 = np.loadtxt(soln_dir1 + '_X.csv', delimiter=' ')
     U1 = np.loadtxt(soln_dir1 + '_U.csv', delimiter=' ')
     t1 = np.loadtxt(soln_dir1 + '_t.csv', delimiter=' ')
+    dt1 = np.diff(t1)
 
     X2 = np.loadtxt(soln_dir2 + '_X.csv', delimiter=' ')
     U2 = np.loadtxt(soln_dir2 + '_U.csv', delimiter=' ')
     t2 = np.loadtxt(soln_dir2 + '_t.csv', delimiter=' ')
+    dt2 = np.diff(t2)
 
-    axes = plot_path(axes, X1, U1)
-    axes = plot_path(axes, X2, U2)
+    axes = plot_path(axes, X1, U1*dt1.reshape((-1,1)))
+    axes = plot_path(axes, X2, U2*dt2.reshape((-1,1)))
     axes = set_aspect_equal_3d(axes)
 
     plt.show()
@@ -146,7 +156,10 @@ if __name__ == '__main__':
 
     elif argv[1] == '-c':
         # compare two paths
-        dist = '0.5m'
+        if len(argv) > 2: 
+            dist = argv[2]
+        else:
+            dist = '0.5m'
         path1 = join(getcwd(), 'debug', 'all_ccp', dist)
         path2 = join(getcwd(), 'debug', 'all_ccp_compare', dist)
         plot_two_solutions(path1, path2, dist)
