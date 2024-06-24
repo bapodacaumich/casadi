@@ -484,3 +484,76 @@ def plot_solution2(x, u, c, T):
 
     plt.tight_layout()
     plt.show()
+
+def normalize(x):
+    n = norm(x)
+    return x/(n + int(n==0))
+
+def draw_camera(axes, pose, viewdir, size=1):
+    """_summary_
+
+    Args:
+        axes (_type_): _description_
+        pose (_type_): _description_
+        viewdir (_type_): _description_
+        size (int, optional): _description_. Defaults to 1.
+
+    Returns:
+        _type_: _description_
+    """
+    # define world frame up
+    up_world = np.array([0,0,1])
+    fov = (pi/4, pi/4) # horizontal, vertical
+
+    # get camera plane basis vectors
+    left = normalize(np.cross(up_world, viewdir))
+    up = normalize(np.cross(viewdir, left))
+
+    # get fov adjusted camera plane centered basis vectors
+    left = left*np.tan(fov[0]/2)
+    up = up*np.tan(fov[1]/2)
+
+    # get viewbox corners
+    box_tl = pose + normalize(viewdir)*size + left*size + up*size
+    box_tr = pose + normalize(viewdir)*size - left*size + up*size
+    box_bl = pose + normalize(viewdir)*size + left*size - up*size
+    box_br = pose + normalize(viewdir)*size - left*size - up*size
+
+    # draw camera viewbox lines
+    pts = []
+    pts.append(pose)
+    pts.append(box_tl)
+    pts.append(box_tr)
+    pts.append(pose)
+    pts.append(box_bl)
+    pts.append(box_br)
+    pts.append(pose)
+    pts.append(box_tl)
+    pts.append(box_bl)
+    pts.append(box_br)
+    pts.append(box_tr)
+
+    pts = np.array(pts)
+    axes.plot(pts[:,0], pts[:,1], pts[:,2], 'k-', lw=0.5)
+
+    return axes
+
+
+if __name__ == "__main__":
+    # plot station and waypoints
+    from plot_solution import plot_station, plot_knotpoints
+
+    for d in np.arange(0.5,5,0.5):
+        for l in [True, False]:
+            fig, axes = plot_station()
+            # start = np.array([2,3,4.2])
+            # start = np.array([2.55,0,2.7])
+            start = np.array([1.8, 4.7, 2.7])
+            axes.plot(start[0], start[1], start[2], 'rx')
+            axes = plot_knotpoints(axes, str(d)+'m', l, start=start)
+            axes = set_aspect_equal_3d(axes)
+            axes.set_xlabel('X Axis')
+            axes.set_ylabel('Y Axis')
+            axes.set_zlabel('Z Axis')
+            axes.set_title('VGD = ' + str(d) + 'm, local = ' + str(l))
+            plt.show()
