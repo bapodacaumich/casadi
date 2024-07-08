@@ -68,7 +68,8 @@ def ocp_station_knot(meshdir=join(getcwd(), 'model', 'convex_detailed_station'),
     print('Importing Knot File: ', knotfile)
 
     path = np.loadtxt(knotfile, delimiter=',') # (N, 6)
-    knots = filter_path_na(path) # get rid of configurations with nans
+    # knots = filter_path_na(path) # get rid of configurations with nans
+    knots = path
     # start = knots[0,:3] # get initial position
     start = np.array([2,3,4.2])
 

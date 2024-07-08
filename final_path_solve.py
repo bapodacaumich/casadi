@@ -29,6 +29,8 @@ def generate_soln_parallel(thrust_limit=1.0,
     for file in listdir(join(getcwd(), 'ccp_paths')):
         input_local = (file[4] == '_')
 
+        if not file.startswith('0.5m_local'): continue
+
         if input_local:
             args = (save_dir,
                     None,
@@ -73,12 +75,12 @@ def generate_soln_parallel(thrust_limit=1.0,
     #     r = list(p.imap(ocp_parallel, arg_list))
 
 if __name__ == "__main__":
-    save_folder='all_ccp_compare'
+    save_folder='all_ccp'
     generate_soln_parallel(thrust_limit=1.0,
                            knot_weight_local=100,
                            fuel_weight_local=1,
                            knot_weight_global=10,
                            fuel_weight_global=10,
                            path_weight=0.1,
-                           save_dir=join(getcwd(), 'debug', save_folder)
+                           save_dir=join(getcwd(), 'ocp_paths', save_folder)
                            )
