@@ -77,8 +77,9 @@ def compute_knot_cost_numpy(X,
                     try:
                         dist = np.sqrt(np.sum((knots[ki, :3].reshape((1,-1)) - X[idx, :3])**2)) # compare state
                     except:
-                        print(lastidx, (knot_idx[ki] + knot_idx[ki+1])//2+1)
-                        print(idx, X.shape)
+                        pass
+                        # print(lastidx, (knot_idx[ki] + knot_idx[ki+1])//2+1)
+                        # print(idx, X.shape)
                 closest_dist = min(closest_dist, dist)
             knot_cost += closest_dist
 
@@ -392,11 +393,6 @@ def pareto_load_plot(cost_dir=join(getcwd(), 'pareto_front','pf_0.2'),
     path_costs = np.loadtxt(join(plot_file_save, 'pcost.csv'))
     coverage = np.loadtxt(join(plot_file_save, 'cov.csv'))
 
-    print('\nObjective Metric Vector Lengths (should be the same): ')
-    print(len(weight_combs))
-    print(fuel_costs.shape)
-    print(knot_costs.shape)
-    print(coverage.shape)
     
     fk_idx, fc_idx, kc_idx = plot_pareto_front(fuel_costs, knot_costs, path_costs, coverage, save_file=join(cost_dir, 'all_points'), separate=separate, local=local)
     print('\nBest Solution Indices:')

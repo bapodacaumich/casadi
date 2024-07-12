@@ -3,7 +3,7 @@ from os import getcwd, listdir
 from os.path import join
 from stl import mesh
 from mpl_toolkits import mplot3d
-from utils import filter_path_na, set_aspect_equal_3d, process_data, load_knots
+from utils import filter_path_na, set_aspect_equal_3d, process_data, load_knots, draw_camera
 import matplotlib.pyplot as plt
 from mpl_toolkits.mplot3d import Axes3D
 from numpy.linalg import norm
@@ -25,13 +25,24 @@ def plot_station():
         # Load the STL files and add the vectors to the plot
         your_mesh = mesh.Mesh.from_file(meshfile)
         vectors = your_mesh.vectors + translation
-        axes.add_collection3d(mplot3d.art3d.Poly3DCollection(vectors))
+        axes.add_collection3d(mplot3d.art3d.Poly3DCollection(vectors, alpha=0.2))
         wf = vectors.reshape(-1, 3)
-        axes.plot(wf[:,0], wf[:,1], wf[:,2], 'k')
+        axes.plot(wf[:,0], wf[:,1], wf[:,2], 'k', lw=0.07)
 
     return figure, axes
 
-def plot_knotpoints(axes, distance, local):
+def plot_knotpoints(axes, distance, local, start=None):
+    """_summary_
+
+    Args:
+        axes (_type_): _description_
+        distance (_type_): _description_
+        local (_type_): _description_
+        start (_type_, optional): switch knot start point to user inputted 'start'. Defaults to None.
+
+    Returns:
+        _type_: _description_
+    """
     for file in listdir(join(getcwd(), 'ccp_paths')):
         if (distance == file[:4]):
             if not ((file[5] == 'l') ^ local):
@@ -41,9 +52,17 @@ def plot_knotpoints(axes, distance, local):
     path = np.loadtxt(knotfile, delimiter=',') # (N, 6)
     knots = filter_path_na(path) # get rid of configurations with nans
 
+    if start is not None:
+        knots[0,:3] = start
+
+    # print('\nFirst two Knot points: ')
+    # print(knots[:2,:3])
+    # knots = knots[:2,:]
     # plot knot points
     axes.plot(knots[:,0], knots[:,1], knots[:,2],'k--')
     axes.scatter(knots[:,0], knots[:,1], knots[:,2])
+    axes.scatter(knots[0,0], knots[0,1], knots[0,2], color='tab:red', label='Start', marker='x')
+    axes.scatter(knots[-1,0], knots[-1,1], knots[-1,2], color='tab:red', label='End', marker='x')
     return axes
 
 def plot_path(axes, X, U, s=5, qs=1, view_direction=False, vs=2):
@@ -68,11 +87,15 @@ def plot_path(axes, X, U, s=5, qs=1, view_direction=False, vs=2):
 
     # plot view direction
     if view_direction:
-        view_scale = 0.5
-        axes.quiver(X[::vs,0],X[::vs,1],X[::vs,2],
-                    view_scale*X[::vs,3],view_scale*X[::vs,4],view_scale*X[::vs,5],
-                    color='tab:grey',
-                    label='Thrust')
+        # view_scale = 0.5
+        # axes.quiver(X[::vs,0],X[::vs,1],X[::vs,2],
+        #             view_scale*X[::vs,3],view_scale*X[::vs,4],view_scale*X[::vs,5],
+        #             color='k',
+        #             label='Thrust')
+
+        for i in range(0, X.shape[0], vs):
+            ## need to import knot points for this:
+            axes = draw_camera(axes, X[i,:3], X[i,3:6], 0.5)
 
     # axis labels
     axes.set_xlabel('X Axis')
@@ -99,8 +122,8 @@ def plot_two_solutions(soln_dir1, soln_dir2, distance='1.5m', local=False):
     t2 = np.loadtxt(soln_dir2 + '_t.csv', delimiter=' ')
     dt2 = np.diff(t2)
 
-    axes = plot_path(axes, X1, U1*dt1.reshape((-1,1)), view_direction=True)
-    axes = plot_path(axes, X2, U2*dt2.reshape((-1,1)), view_direction=True)
+    # axes = plot_path(axes, X1, U1*dt1.reshape((-1,1)), view_direction=True)
+    # axes = plot_path(axes, X2, U2*dt2.reshape((-1,1)), view_direction=True)
     axes = set_aspect_equal_3d(axes)
 
     plt.show()
@@ -125,7 +148,7 @@ def plot_solution(soln_dir='thrust_test_k_1_p_1_f_1', soln_file=None, thrust_lim
     knots = load_knots(distance, local)
     X = process_data(knots, X, t)
 
-    axes = plot_path(axes, X, U, view_direction=True)
+    axes = plot_path(axes, X, U, view_direction=True, qs=2, vs=10)
     axes = set_aspect_equal_3d(axes)
     # savefig
     # savefile = os.path.basename(os.path.normpath(soln_file))
@@ -146,6 +169,8 @@ def plot_solution(soln_dir='thrust_test_k_1_p_1_f_1', soln_file=None, thrust_lim
     # axes.view_init(elev=30, azim=150)
     # view_num += 1
     # plt.savefig(os.path.join(getcwd(), 'path_figures', savefile + str(view_num) + '.png'), dpi=save_dpi)
+    fig_path = join(getcwd(), 'path_figures', soln_file + '.html')
+    # figure.write_html(fig_path)
     plt.show()
 
 if __name__ == '__main__':
@@ -162,7 +187,9 @@ if __name__ == '__main__':
         soln_file_input = join(getcwd(), 'ocp_paths', argv[2], argv[3])
         if len(argv) > 4: distance_input = argv[4]
         else: distance_input = '1.5m'
-        plot_solution(thrust_limit=1.0, soln_file=soln_file_input, distance=distance_input, local=False)
+        local_in = False
+        if argv[3][-1] == 'l': local_in = True
+        plot_solution(thrust_limit=1.0, soln_file=soln_file_input, distance=distance_input, local=True)
 
     elif argv[1] == '-c':
         # compare two paths
