@@ -60,9 +60,11 @@ def plot_knotpoints(axes, distance, local, start=None):
     # knots = knots[:2,:]
     # plot knot points
     axes.plot(knots[:,0], knots[:,1], knots[:,2],'k--')
-    axes.scatter(knots[:,0], knots[:,1], knots[:,2])
-    axes.scatter(knots[0,0], knots[0,1], knots[0,2], color='tab:red', label='Start', marker='x')
-    axes.scatter(knots[-1,0], knots[-1,1], knots[-1,2], color='tab:red', label='End', marker='x')
+    w = np.arange(0,1,1/knots.shape[0])
+    axes.scatter(knots[:,0], knots[:,1], knots[:,2], c=w,cmap='inferno', alpha=1, s=25)
+    # axes.scatter(knots[:,0], knots[:,1], knots[:,2])
+    # axes.scatter(knots[0,0], knots[0,1], knots[0,2], color='tab:red', label='Start', marker='x')
+    # axes.scatter(knots[-1,0], knots[-1,1], knots[-1,2], color='tab:red', label='End', marker='x')
     return axes
 
 def plot_path(axes, X, U, s=5, qs=1, view_direction=False, vs=2):
@@ -148,7 +150,8 @@ def plot_solution(soln_dir='thrust_test_k_1_p_1_f_1', soln_file=None, thrust_lim
     knots = load_knots(distance, local)
     X = process_data(knots, X, t)
 
-    axes = plot_path(axes, X, U, view_direction=True, qs=2, vs=10)
+    # axes = plot_path(axes, X, U, view_direction=True, qs=2, vs=10)
+    axes.set_axis_off()
     axes = set_aspect_equal_3d(axes)
     # savefig
     # savefile = os.path.basename(os.path.normpath(soln_file))
